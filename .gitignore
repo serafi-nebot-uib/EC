@@ -1,0 +1,5 @@
+.DS_Store
+.localized
+
+*.s68
+*.l68
