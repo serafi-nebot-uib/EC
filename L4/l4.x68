@@ -1,4 +1,5 @@
 	ORG $1000
+
 N:	EQU 7
 V:	DC.B -10,120,8,70,0,-99,-106
 C:	DC.B 0
@@ -14,7 +15,7 @@ LOOP:
 	MOVE.B (A0)+, D2
 	CMP.B #0, D2
 	BGE COMPARE
-	MULS.W #-1, D2
+	NEG.B D2
 
 COMPARE:
 	CMP.B #T1, D2
