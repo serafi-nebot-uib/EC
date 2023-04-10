@@ -1,0 +1,12 @@
+	ORG $7ff0
+V	DC.W 3,9,-4,6
+X	DS.L 1
+	DS.W 0
+
+START:	MOVE.L #$7E, X
+	SUBQ.W #3, X
+	MOVEA.L #0, A2
+	ADDQ.L #2, A2
+	MOVE.W V(A0), D0
+	TRAP #15
+	END START
