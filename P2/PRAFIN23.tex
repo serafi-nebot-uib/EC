@@ -1,0 +1,117 @@
+\documentclass[11pt, a4paper]{article}
+\title{Estructura de Computadores I}
+\author{Serafí Nebot Ginard - 41617163C}
+\date{27/04/2023}
+\thispagestyle{empty}
+
+\usepackage[legalpaper, margin=2.5cm]{geometry}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{parskip}
+\usepackage{indentfirst}
+
+\pagestyle{fancy}
+\fancyfoot{}
+\lhead{}
+\rhead{}
+\lfoot{Estructura de Computadores I}
+\rfoot{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0.4pt}
+\setlength{\headheight}{16pt}
+
+\begin{document}
+\renewcommand{\familydefault}{ppl}
+\fontfamily{ppl}
+\selectfont
+\clearpage\maketitle
+\thispagestyle{empty}
+\pagebreak
+
+\tableofcontents
+\pagebreak
+
+\section{Implementation}
+\subsection{Decode phase}
+
+When developing an instruction decoder it is very common to use a Binary Decision Tree, a structure
+based on a sequential decision process. This technique is very useful when the instructions's
+opcodes to decode are completely arbitrary, with no common pattern between them and their assigned
+ID. Luckily, this is not the case for the instruction set of the HAL9000, shown in
+Table \ref{table:halinstructions}, as each instruction's ID is encoded within its opcode (with some
+exceptions).
+
+\begin{table}[h]
+	\centering
+	{
+		\fontfamily{lmtt}
+		\selectfont
+		\begin{tabular}{ | l | l | l | }
+			\hline
+			\textbf{ID} & \textbf{Instruction} & \textbf{Encoding} \\
+			\hline
+			0 & LOA M, Ti & 0000xxxmmmmmmmmi \\
+			1 & STO Ti, M & 0001xxxmmmmmmmmi \\
+			2 & LOIP (Xb), Ti & 0010xxxxxbbbxxxi \\
+			3 & STIP Ti, (Xb) & 0011xxxxxbbbxxxi \\
+			4 & GOI M & 0100xxxmmmmmmmmx \\
+			5 & GOZ M & 0101xxxmmmmmmmmx \\
+			6 & GON M & 0110xxxmmmmmmmmx \\
+			7 & EXIT & 10xxxxxxxxxxxxxx \\
+			8 & COPY Rb, R & 11000xxxxbbbxccc \\
+			9 & ADD Ra, Rb, R & 11001aaaxbbbxccc \\
+			10 & SUB Ra, Rb, Rc & 11010aaaxbbbxccc \\
+			11 & AND Ra, Rb, Rc & 11011aaaxbbbxccc \\
+			12 & SET \#k, Rc & 11100kkkkkkkkccc \\
+			13 & ADQ \#k, Rc & 11101kkkkkkkkccc \\
+			14 & LSH \#p, Rb, \#n & 11110pppxbbbxxxn \\
+			\hline
+		\end{tabular}
+	}
+	\label{table:halinstructions}
+	\caption{HAL9000 instruction set}
+\end{table}
+
+In order to take advantage of this pattern, we must separate the instruction set into two groups and
+an exception.
+
+\noindent\textbf{Group 0} \\
+Instructions with IDs from 0 to 6 follow the pattern:
+\begin{equation*}
+	\mathbf{0x_3x_2x_1k_{12}k_{11}k_{10}k_9k_8k_7k_6k_5k_4k_3k_2k_1}
+\end{equation*}
+where $\mathbf{x_{1 \ldots 3}}$ encode the instruction's ID as an unsigned binary number and
+$\mathbf{k_{1 \ldots 12}}$ encode the rest of the instruction. This scenario is very easy to resolve
+as the only thing needed tp obtain the ID is to logically shift right the whole instruction by 12:
+\begin{equation*}
+	\mathbf{0000000000000x_3x_2x_1}
+\end{equation*}
+
+\noindent\textbf{Group 1} \\
+Instructions with IDs from 8 to 14 follow the pattern:
+\begin{equation*}
+	\mathbf{1x_4x_3x_2x_1k_{11}k_{10}k_9k_8k_7k_6k_5k_4k_3k_2k_1}
+\end{equation*}
+where $\mathbf{x_{1 \ldots 4}}$ encode the instruction's ID as an unsigned binary number and
+$\mathbf{k_{1 \ldots 11}}$ encode the rest of the instruction. This scenario may be resolved by
+setting the MSb to 0 and logically shifting right the whole instructin by 11:
+\begin{equation*}
+	\mathbf{000000000000x_4x_3x_2x_1}
+\end{equation*}
+
+\noindent\textbf{The exception} \\
+Instruction with ID 7 follows the pattern:
+\begin{equation*}
+	\mathbf{10k_{14}k_{13}k_{12}k_{11}k_{10}k_9k_8k_7k_6k_5k_4k_3k_2k_1}
+\end{equation*}
+where $\mathbf{10}$ is the instruction's opcode and $\mathbf{k_{1 \ldots 14}}$ encode the rest of the
+instruction. This scenario may be resolved by 
+
+This scenario is very easy to resolve as the only thing needed to is the only exception
+to this pattern and can be treated separately by
+checking its first two bits.
+
+\end{document}
+

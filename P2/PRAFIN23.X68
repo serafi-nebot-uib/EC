@@ -111,19 +111,20 @@ ELSH:
 	;*** especificada en el enunciado
 DECOD:
 	; ESCRIBID VUESTRO CODIGO AQUI
-	MOVE.L D0, -(SP)
-	MOVE.W 8(SP), D0
+	MOVE.L D0, -(SP) ; save current value of D0
+	MOVE.W 8(SP), D0 ; load instruction
 	BTST #15, D0
-	BEQ.S DECOD_END
-	LSL.W #1, D0
+	BEQ.S DECOD_END ; if bit 15 = 0 jump to end
+	LSL.W #1, D0 ; left shift to "normalize" 5 bit opcode to 4 bit opcode
 	BTST #15, D0
-	BNE.S DECOD_END
-	MOVE.W #%0111000000000000, D0
+	BNE.S DECOD_END ; if bit 15 = 1 jump to end
+	MOVE.W #%0111000000000000, D0 ; if bit 15 = 0 then instruction = EXIT
 DECOD_END:
+	; shift right the four MSb to the four LSb
 	LSR.W #8, D0
 	LSR.W #4, D0
-	MOVE.W D0, 8(SP)
-	MOVE.L (SP)+, D0
+	MOVE.W D0, 8(SP) ; save instruction ID to reserved space
+	MOVE.L (SP)+, D0 ; restore value of D0
 	RTS
 
 	;--- FDECOD: FIN DECOD
