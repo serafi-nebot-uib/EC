@@ -10,7 +10,22 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{parskip}
+\usepackage{listings}
 \usepackage{indentfirst}
+\usepackage{titling}
+\renewcommand\maketitlehooka{\null\mbox{}\vfill}
+\renewcommand\maketitlehookd{\vfill\null}
+
+\lstdefinestyle{customasm}{
+	belowcaptionskip=1\baselineskip,
+	frame=single,
+	xleftmargin=\parindent,
+	language=[Motorola68k]Assembler,
+	basicstyle=\footnotesize\ttfamily,
+	captionpos=b
+	% commentstyle=\color{green},
+	% keywordstyle=\color{red}
+}
 
 \pagestyle{fancy}
 \fancyfoot{}
@@ -26,22 +41,24 @@
 \renewcommand{\familydefault}{ppl}
 \fontfamily{ppl}
 \selectfont
-\clearpage\maketitle
+\begin{titlingpage}
+	\clearpage\maketitle
+\end{titlingpage}
 \thispagestyle{empty}
 \pagebreak
 
 \tableofcontents
 \pagebreak
 
-\section{Implementation}
-\subsection{Decode phase}
+\section{Decode phase}
+\subsection{Decode phase introduction}
 
 When developing an instruction decoder it is very common to use a Binary Decision Tree, a structure
-based on a sequential decision process. This technique is very useful when the instructions's
+based on a sequential decision process. This technique is very useful when the instructions'
 opcodes to decode are completely arbitrary, with no common pattern between them and their assigned
-ID. Luckily, this is not the case for the instruction set of the HAL9000, shown in
-Table \ref{table:halinstructions}, as each instruction's ID is encoded within its opcode (with some
-exceptions).
+ID. Luckily, this is not the case for the instruction set of the HAL9000 given for this assignment,
+shown in Table \ref{table:halinstructions}, as each instruction's ID is encoded within its opcode
+(with some exceptions).
 
 \begin{table}[h]
 	\centering
@@ -74,7 +91,7 @@ exceptions).
 	\caption{HAL9000 instruction set}
 \end{table}
 
-In order to take advantage of this pattern, we must separate the instruction set into two groups and
+In order to take advantage of this pattern, let's separate the HAL9000 instruction set into two groups and
 an exception.
 
 \noindent\textbf{Group 0} \\
@@ -84,7 +101,8 @@ Instructions with IDs from 0 to 6 follow the pattern:
 \end{equation*}
 where $\mathbf{x_{1 \ldots 3}}$ encode the instruction's ID as an unsigned binary number and
 $\mathbf{k_{1 \ldots 12}}$ encode the rest of the instruction. This scenario is very easy to resolve
-as the only thing needed tp obtain the ID is to logically shift right the whole instruction by 12:
+as the only thing needed to obtain the ID is to logically shift right the whole instruction by 12
+bits:
 \begin{equation*}
 	\mathbf{0000000000000x_3x_2x_1}
 \end{equation*}
@@ -96,22 +114,53 @@ Instructions with IDs from 8 to 14 follow the pattern:
 \end{equation*}
 where $\mathbf{x_{1 \ldots 4}}$ encode the instruction's ID as an unsigned binary number and
 $\mathbf{k_{1 \ldots 11}}$ encode the rest of the instruction. This scenario may be resolved by
-setting the MSb to 0 and logically shifting right the whole instructin by 11:
+setting the MSb to 0 and logically shifting right the whole instructin by 11 bits:
 \begin{equation*}
 	\mathbf{000000000000x_4x_3x_2x_1}
 \end{equation*}
 
 \noindent\textbf{The exception} \\
-Instruction with ID 7 follows the pattern:
+Instruction with ID 7 is the only one which does not follow the same pattern:
 \begin{equation*}
 	\mathbf{10k_{14}k_{13}k_{12}k_{11}k_{10}k_9k_8k_7k_6k_5k_4k_3k_2k_1}
 \end{equation*}
-where $\mathbf{10}$ is the instruction's opcode and $\mathbf{k_{1 \ldots 14}}$ encode the rest of the
-instruction. This scenario may be resolved by 
+where the two MSb ($\mathbf{10}$) is the instruction's opcode and $\mathbf{k_{1 \ldots 14}}$ encode
+the rest of the instruction. This scenario may be resolved by checking the two MSb and hardcoding
+the ID.
 
-This scenario is very easy to resolve as the only thing needed to is the only exception
-to this pattern and can be treated separately by
-checking its first two bits.
+\pagebreak
+\subsection{Decode phase implementation}
+Due to the fact that the HAL9000 instructions can be divided into two groups, a one-level Binary Decision
+Tree has been implemented in order to treat each group differently.
+
+The decode algorithm has been implemented in the following manner:
+\begin{enumerate}
+	\item If the MSb is equal to $\mathbf{0}$ then the instruction is in \textbf{Group 0}. Go to
+		step 6.
+	\item If the MSb is equal to $\mathbf{1}$ then the instruction is in \textbf{Group 1} or
+		\textbf{The exception}.
+	\item Shift left by 1 bit to make the instruction's opcode the same size as \textbf{Group 0}'s.
+	\item If the MSb is equal to $\mathbf{1}$ then the instruction is in \textbf{Group 1}. Got to
+		step 6.
+	\item Replace the instruction with $\mathbf{0111000000000000}$ (instruction is \textbf{The
+		exception}; replace opcode with a hardcoded value).
+	\item Shift right 12 bits to obtain the instruction's opcode.
+\end{enumerate}
+The decode algorithm can be translated into the following Motorola 68000 code:
+\begin{lstlisting}[style=customasm, caption={HAL9000 instruction decoder}, label={code:instrdecoder}]
+	; assuming instruction to decode is in D0
+	BTST #15, D0
+	BEQ.S DECOD_END ; if bit 15 = 0 jump to end
+	LSL.W #1, D0 ; left shift to "normalize" 5 bit opcode to 4 bit opcode
+	BTST #15, D0
+	BNE.S DECOD_END ; if bit 15 = 1 jump to end
+	MOVE.W #%0111000000000000, D0 ; if bit 15 = 0 then instruction = EXIT
+DECOD_END:
+	; shift right the four MSb to the four LSb
+	LSR.W #8, D0
+	LSR.W #4, D0
+	; instruction's opcode is in D0
+\end{lstlisting}
 
 \end{document}
 
