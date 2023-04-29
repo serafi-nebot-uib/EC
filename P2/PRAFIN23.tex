@@ -1,7 +1,7 @@
 \documentclass[11pt, a4paper]{article}
-\title{Estructura de Computadores I}
-\author{Serafí Nebot Ginard - 41617163C}
-\date{27/04/2023}
+\title{Estructura de Computadores I (2022-2023)}
+\author{Serafí Nebot Ginard (41617163C)\\sng656@id.uib.eu}
+\date{}
 \thispagestyle{empty}
 
 \usepackage[legalpaper, margin=2.5cm]{geometry}
@@ -38,9 +38,11 @@
 \setlength{\headheight}{16pt}
 
 \begin{document}
+
 \renewcommand{\familydefault}{ppl}
 \fontfamily{ppl}
 \selectfont
+
 \begin{titlingpage}
 	\clearpage\maketitle
 \end{titlingpage}
@@ -69,21 +71,21 @@ shown in Table \ref{table:halinstructions}, as each instruction's ID is encoded 
 			\hline
 			\textbf{ID} & \textbf{Instruction} & \textbf{Encoding} \\
 			\hline
-			0 & LOA M, Ti & 0000xxxmmmmmmmmi \\
-			1 & STO Ti, M & 0001xxxmmmmmmmmi \\
-			2 & LOIP (Xb), Ti & 0010xxxxxbbbxxxi \\
-			3 & STIP Ti, (Xb) & 0011xxxxxbbbxxxi \\
-			4 & GOI M & 0100xxxmmmmmmmmx \\
-			5 & GOZ M & 0101xxxmmmmmmmmx \\
-			6 & GON M & 0110xxxmmmmmmmmx \\
+			0 & LOA M, Ti & 0000xxxxxxxxxxxx \\
+			1 & STO Ti, M & 0001xxxxxxxxxxxx \\
+			2 & LOIP (Xb), Ti & 0010xxxxxxxxxxxx \\
+			3 & STIP Ti, (Xb) & 0011xxxxxxxxxxxx \\
+			4 & GOI M & 0100xxxxxxxxxxxx \\
+			5 & GOZ M & 0101xxxxxxxxxxxx \\
+			6 & GON M & 0110xxxxxxxxxxxx \\
 			7 & EXIT & 10xxxxxxxxxxxxxx \\
-			8 & COPY Rb, R & 11000xxxxbbbxccc \\
-			9 & ADD Ra, Rb, R & 11001aaaxbbbxccc \\
-			10 & SUB Ra, Rb, Rc & 11010aaaxbbbxccc \\
-			11 & AND Ra, Rb, Rc & 11011aaaxbbbxccc \\
-			12 & SET \#k, Rc & 11100kkkkkkkkccc \\
-			13 & ADQ \#k, Rc & 11101kkkkkkkkccc \\
-			14 & LSH \#p, Rb, \#n & 11110pppxbbbxxxn \\
+			8 & COPY Rb, R & 11000xxxxxxxxxxx \\
+			9 & ADD Ra, Rb, R & 11001xxxxxxxxxxx \\
+			10 & SUB Ra, Rb, Rc & 11010xxxxxxxxxxx \\
+			11 & AND Ra, Rb, Rc & 11011xxxxxxxxxxx \\
+			12 & SET \#k, Rc & 11100xxxxxxxxxxx \\
+			13 & ADQ \#k, Rc & 11101xxxxxxxxxxx \\
+			14 & LSH \#p, Rb, \#n & 11110xxxxxxxxxxx \\
 			\hline
 		\end{tabular}
 	}
