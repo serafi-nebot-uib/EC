@@ -22,13 +22,22 @@ INSTR_OUT:
 	DS.W 0
 
 START:
+
+	CLR.L D0
+	MOVE.B #$80, D0
+	EXT.W D0
+
+	SIMHALT
+
 	MOVE.L #NINSTR-1, D0
 DEC_LP:
 	MOVE.L D0, D1
 	MULU #2, D1
 	MOVEA.L D1, A0
+	SUBQ.W #2, SP
 	MOVE.W INSTR(A0), -(SP)
-	JSR OP_DEC
+	JSR DECOD
+	SUBQ.W #2, SP
 	MOVE.W (SP)+, D1
 	MOVEA.L D0, A0
 	MOVE.B D1, INSTR_OUT(A0)
@@ -36,18 +45,30 @@ DEC_LP:
 
 	TRAP #15
 
-OP_DEC:
-	MOVE.L D0, -(SP)
-	MOVE.W 8(SP), D0
+DECOD:
+	MOVE.L D0, -(SP) ; save current value of D0
+	MOVE.W 8(SP), D0 ; load instruction
 	BTST #15, D0
-	BEQ.S *+12
-	LSL.W #1, D0
+	BEQ.S DECOD_END ; if bit 15 = 0 jump to end
+	LSL.W #1, D0 ; left shift to "normalize" 5 bit opcode to 4 bit opcode
 	BTST #15, D0
-	BNE.S *+4
-	MOVE.W #%0111000000000000, D0
-OP_END:
+	BNE.S DECOD_END ; if bit 15 = 1 jump to end
+	MOVE.W #%0111000000000000, D0 ; if bit 15 = 0 then instruction = EXIT
+DECOD_END:
+	; shift right the four MSb to the four LSb
 	LSR.W #8, D0
 	LSR.W #4, D0
+	MOVE.W D0, 8(SP) ; save instruction ID to reserved space
+	MOVE.L (SP)+, D0 ; restore value of D0
+	RTS
+
+SEXT:
+	MOVE.L D0, -(SP)
+	CLR.L D0
+	MOVE.W 8(SP), D0
+
+	LSL.W #8, D0
+
 	MOVE.W D0, 8(SP)
 	MOVE.L (SP)+, D0
 	RTS

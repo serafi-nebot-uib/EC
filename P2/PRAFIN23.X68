@@ -4,8 +4,8 @@
 * Date       : 19/05/2023
 * Description: Emulador de la HAL9000
 *-----------------------------------------------------------
-ORG $1000
-EMEM:   DC.W $E082,$E09B,$E0B4,$E01D,$2020,$C006,$2031,$C017,$F160
+	ORG $1000
+EMEM:   DC.W $0006, $E082,$E09B,$E0B4,$E01D,$2020,$C006,$2031,$C017,$F160
 	DC.W $F170,$CE70,$3040,$EFFD,$501E,$4008,$8000,$0001
 	DC.W $0001,$0001,$0001,$0001,$0001,$0000,$0000,$0000
 EIR:	DC.W 0 ;eregistro de instruccion
@@ -30,7 +30,11 @@ FETCH:
 		;*** y dejar listo el EPC para que apunte a la siguiente instruccion
 
 		; ESCRIBID VUESTRO CODIGO AQUI	    
-
+	MOVE.W EPC, D1
+	MULU #2, D1
+	MOVEA.W D1, A0
+	MOVE.W EMEM(A0), EIR
+	ADDQ.W #1, EPC
 		;--- FFETCH: FIN FETCH
 
 
@@ -41,7 +45,11 @@ FETCH:
 		;*** almacenando el resultado de la decodificacion en D1
 
 		; ESCRIBID VUESTRO CODIGO AQUI    	    
-
+	SUBQ.W #2, SP
+	MOVE.W EIR, -(SP)
+	JSR DECOD
+	ADDQ.W #2, SP
+	MOVE.W (SP)+, D1
 		;--- FBRDECOD: FIN SALTO A DECOD
 
 
@@ -77,7 +85,41 @@ JMPLIST:
 
 	; ESCRIBID EN CADA ETIQUETA LA FASE DE EJECUCION DE CADA INSTRUCCION
 ELOA:
+	CLR.L D2
+	CLR.L D3
+	MOVE.W EIR, D2
+	LSR.W #1, D2
+	ANDI.W #%11111111, D2 ; src
+	MULU #2, D2
+	MOVE.W EIR, D3
+	ANDI.W #%1, D3 ; dst
+	MOVEA.L D2, A2
+	MOVEA.L D3, A3
+	MOVE.W EMEM(A2), D4
+	MOVE.W D4, ET0(A3)
+	; update flags
+	SUBQ.L #2, SP
+	MOVE.L D4, -(SP)
+	JSR FLAGS
+	ADDQ.L #4, SP
+	MOVE.W (SP)+, D2
+	ANDI.B #%011, D2
+	ANDI.B #%100, ESR
+	OR.B D2, ESR
+	SIMHALT
+	JMP FETCH
 ESTO:
+	CLR.L D2
+	CLR.L D3
+	MOVE.W EIR, D2
+	LSR.W #1, D2
+	ANDI.W #%11111111, D2 ; src
+	MOVE.W EIR, D3
+	ANDI.W #%1, D3 ; dst
+	MOVEA.L D2, A2
+	MOVEA.L D3, A3
+	MOVE.W ET0(A3), EMEM(A2)
+	JMP FETCH
 ELOIP:
 ESTIP:
 EGOI:
@@ -89,8 +131,29 @@ EADD:
 ESUB:
 EAND:
 ESET:
+	CLR.L D2
+	MOVE.W EIR, D2
+	LSR.W #3, D2
+	ANDI.W #%11111111, D2 ; src
+	EXT.W D2
+	MOVE.W EIR, D3
+	ANDI.W #%111, D3 ; dst
+	MULU.W #2, D3
+	MOVEA.L D3, A1
+	MOVE.W D2, ET0(A1)
+	; update flags
+	SUBQ.L #2, SP
+	MOVE.L D2, -(SP)
+	JSR FLAGS
+	ADDQ.L #4, SP
+	MOVE.W (SP)+, D2
+	ANDI.B #%011, D2
+	ANDI.B #%100, ESR
+	OR.B D2, ESR
+	JMP FETCH
 EADQ:
 ELSH:
+
 	;--- FEXEC: FIN EJECUCION
 
 
@@ -109,6 +172,25 @@ ELSH:
 	;*** Tras la etiqueta DECOD, debeis implementar la subrutina de 
 	;*** decodificacion, que debera ser de libreria, siguiendo la interfaz
 	;*** especificada en el enunciado
+
+FLAGS:
+	MOVE.L D0, -(SP)
+	MOVE.L D1, -(SP)
+	MOVE.L 12(SP), D0
+	MOVE.L D0, D1
+
+	LSR.L #8, D1
+	LSR.L #6, D1
+	ANDI.W #%110, D1
+	ANDI.W #$ffff, D0
+	BNE FLAGSZ
+	ORI.W #%001, D1
+FLAGSZ:
+	MOVE.W D1, 16(SP)
+	MOVE.L (SP)+, D1
+	MOVE.L (SP)+, D0
+	RTS
+
 DECOD:
 	; ESCRIBID VUESTRO CODIGO AQUI
 	MOVE.L D0, -(SP) ; save current value of D0
@@ -123,7 +205,7 @@ DECOD_END:
 	; shift right the four MSb to the four LSb
 	LSR.W #8, D0
 	LSR.W #4, D0
-	MOVE.W D0, 8(SP) ; save instruction ID to reserved space
+	MOVE.W D0, 10(SP) ; save instruction ID to reserved space
 	MOVE.L (SP)+, D0 ; restore value of D0
 	RTS
 
