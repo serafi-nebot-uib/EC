@@ -5,9 +5,11 @@
 * Description: Emulador de la HAL9000
 *-----------------------------------------------------------
 	ORG $1000
-EMEM:   DC.W $0006, $E082,$E09B,$E0B4,$E01D,$2020,$C006,$2031,$C017,$F160
-	DC.W $F170,$CE70,$3040,$EFFD,$501E,$4008,$8000,$0001
-	DC.W $0001,$0001,$0001,$0001,$0001,$0000,$0000,$0000
+
+EMEM:	DC.W $E082,$E09B,$E0B4,$E01D,$2020,$C006,$2031,$C017
+        DC.W $F160,$F170,$CE70,$3040,$EFFD,$501E,$4008,$8000
+        DC.W $0001,$0001,$0001,$0001,$0001,$0001,$0000,$0000
+        DC.W $0000
 EIR:	DC.W 0 ;eregistro de instruccion
 EPC:	DC.W 0 ;econtador de programa
 ET0:	DC.W 0 ;eregistro T0
@@ -87,60 +89,281 @@ JMPLIST:
 ELOA:
 	CLR.L D2
 	CLR.L D3
+
 	MOVE.W EIR, D2
 	LSR.W #1, D2
-	ANDI.W #%11111111, D2 ; src
-	MULU #2, D2
+	ANDI.W #%11111111, D2
+
 	MOVE.W EIR, D3
 	ANDI.W #%1, D3 ; dst
+
+	MULU #2, D2
+	MULU #2, D3
 	MOVEA.L D2, A2
 	MOVEA.L D3, A3
-	MOVE.W EMEM(A2), D4
-	MOVE.W D4, ET0(A3)
+	MOVE.W EMEM(A2), ET0(A3)
+
 	; update flags
 	SUBQ.L #2, SP
-	MOVE.L D4, -(SP)
+	MOVE.L ET0(A3), -(SP)
 	JSR FLAGS
 	ADDQ.L #4, SP
 	MOVE.W (SP)+, D2
 	ANDI.B #%011, D2
 	ANDI.B #%100, ESR
 	OR.B D2, ESR
-	SIMHALT
+
 	JMP FETCH
 ESTO:
 	CLR.L D2
 	CLR.L D3
+
 	MOVE.W EIR, D2
 	LSR.W #1, D2
 	ANDI.W #%11111111, D2 ; src
+
 	MOVE.W EIR, D3
 	ANDI.W #%1, D3 ; dst
+
+	MULU.W #2, D2
+	MULU.W #2, D3
 	MOVEA.L D2, A2
 	MOVEA.L D3, A3
 	MOVE.W ET0(A3), EMEM(A2)
+
 	JMP FETCH
 ELOIP:
+	CLR.L D2
+	CLR.L D3
+	MOVEA.L #0, A4
+
+	; load src
+	MOVE.W EIR, D2
+	LSR.W #4, D2
+	ANDI.W #%111, D2
+
+	; load dst
+	MOVE.W EIR, D3
+	ANDI.W #%1, D3
+
+	; perform operation
+	MULU.W #2, D2
+	MULU.W #2, D3
+	MOVEA.L D2, A2
+	MOVEA.L D3, A3
+	MOVE.W ET0(A2), D4
+	MULU.W #2, D4
+	MOVE.W D4, A4
+	MOVE.W EMEM(A4), ET0(A3)
+	ADDQ.W #1, ET0(A2)
+
+	; update flags
+	SUBQ.L #2, SP
+	MOVE.L ET0(A3), -(SP)
+	JSR FLAGS
+	ADDQ.L #4, SP
+	MOVE.W (SP)+, D2
+	ANDI.B #%011, D2
+	ANDI.B #%100, ESR
+	OR.B D2, ESR
+
+	JMP FETCH
 ESTIP:
+	CLR.L D2
+	CLR.L D3
+	MOVEA.L #0, A4
+
+	; load src
+	MOVE.W EIR, D2
+	ANDI.W #%1, D2
+
+	; load dst
+	MOVE.W EIR, D3
+	LSR.W #4, D3
+	ANDI.W #%111, D3
+
+	MULU.W #2, D2
+	MULU.W #2, D3
+	MOVEA.L D2, A2
+	MOVEA.L D3, A3
+	MOVE.W ET0(A3), D4
+	MULU.W #2, D4
+	MOVE.W D4, A4
+	MOVE.W ET0(A2), EMEM(A4)
+	ADDQ.W #1, ET0(A3)
+
+	JMP FETCH
 EGOI:
+	MOVE.W EIR, D2
+	LSR.W #1, D2
+	ANDI.W #%11111111, D2
+
+	MOVE.W D2, EPC
+
+	JMP FETCH
 EGOZ:
+	BTST #0, ESR
+	BEQ FETCH
+	JMP EGOI
 EGON:
+	BTST #1, ESR
+	BEQ FETCH
+	JMP EGOI
 EEXIT:
+	SIMHALT
 ECOPY:
+	; src
+	MOVE.W EIR, D2
+	LSR.W #4, D2
+	ANDI.W #%111, D2
+
+	; dst
+	MOVE.W EIR, D3
+	ANDI.W #%111, D3
+
+	MULU.W #2, D2
+	MULU.W #2, D3
+	MOVEA.L D2, A2
+	MOVEA.L D3, A3
+	MOVE.W ET0(A2), ET0(A3)
+
+	; update flags
+	SUBQ.L #2, SP
+	MOVE.L ET0(A3), -(SP)
+	JSR FLAGS
+	ADDQ.L #4, SP
+	MOVE.W (SP)+, D2
+	ANDI.B #%011, D2
+	ANDI.B #%100, ESR
+	OR.B D2, ESR
+
+	JMP FETCH
 EADD:
+	CLR.L D2
+	CLR.L D3
+	CLR.L D4
+	MOVEA.L #0, A2
+	MOVEA.L #0, A3
+	MOVEA.L #0, A4
+
+	MOVE.W ESR, D2
+	LSR.W #8, D2
+	ANDI.W #%111, D2
+
+	MOVE.W ESR, D3
+	LSR.W #4, D3
+	ANDI.W #%111, D3
+
+	MOVE.W ESR, D4
+	ANDI.W #%111, D4
+
+	MULU.W #2, D2
+	MULU.W #2, D3
+	MULU.W #2, D4
+	MOVEA.L D2, A2
+	MOVEA.L D3, A3
+	MOVEA.L D4, A4
+	MOVE.W ET0(A2), D2
+	MOVE.W ET0(A3), D3
+	ADD.L D2, D3
+	MOVE.W D3, ET0(A4)
+
+	; update flags
+	SUBQ.L #2, SP
+	MOVE.L ET0(A3), -(SP)
+	JSR FLAGS
+	ADDQ.L #4, SP
+	MOVE.W (SP)+, ESR
+
+	JMP FETCH
 ESUB:
+	CLR.L D2
+	CLR.L D3
+	CLR.L D4
+	MOVEA.L #0, A4
+
+	; Ra
+	MOVE.W ESR, D2
+	LSR.W #8, D2
+	ANDI.W #%111, D2
+
+	; Rb
+	MOVE.W ESR, D3
+	LSR.W #4, D3
+	ANDI.W #%111, D3
+
+	; Rc
+	MOVE.W ESR, D4
+	ANDI.W #%111, D4
+
+	; subtract
+	NOT.L D2
+	ADDQ.L #1, D2
+	ADD.L D3, D2
+	MULU.W #2, D4
+	MOVEA.L D4, A4
+	MOVE.W D2, ET0(A4)
+
+	; update flags
+	SUBQ.L #2, SP
+	MOVE.L D2, -(SP)
+	JSR FLAGS
+	ADDQ.L #4, SP
+	MOVE.W (SP)+, ESR
+
+	JMP FETCH
 EAND:
+	CLR.L D2
+	CLR.L D3
+	CLR.L D4
+	MOVEA.L #0, A4
+
+	; Ra
+	MOVE.W ESR, D2
+	LSR.W #8, D2
+	ANDI.W #%111, D2
+
+	; Rb
+	MOVE.W ESR, D3
+	LSR.W #4, D3
+	ANDI.W #%111, D3
+
+	; Rc
+	MOVE.W ESR, D4
+	ANDI.W #%111, D4
+
+	AND.W D2, D3
+	MULU.W #2, D4
+	MOVEA.L D4, A4
+	MOVE.W D3, ET0(A4)
+
+	; update flags
+	SUBQ.L #2, SP
+	MOVE.L ET0(A4), -(SP)
+	JSR FLAGS
+	ADDQ.L #4, SP
+	MOVE.W (SP)+, D2
+	ANDI.B #%011, D2
+	ANDI.B #%100, ESR
+	OR.B D2, ESR
+
+	JMP FETCH
 ESET:
 	CLR.L D2
+	CLR.L D3
+
 	MOVE.W EIR, D2
 	LSR.W #3, D2
 	ANDI.W #%11111111, D2 ; src
 	EXT.W D2
+
 	MOVE.W EIR, D3
 	ANDI.W #%111, D3 ; dst
+
 	MULU.W #2, D3
-	MOVEA.L D3, A1
-	MOVE.W D2, ET0(A1)
+	MOVEA.L D3, A3
+	MOVE.W D2, ET0(A3)
+
 	; update flags
 	SUBQ.L #2, SP
 	MOVE.L D2, -(SP)
@@ -150,9 +373,71 @@ ESET:
 	ANDI.B #%011, D2
 	ANDI.B #%100, ESR
 	OR.B D2, ESR
+
 	JMP FETCH
 EADQ:
+	CLR.L D2
+	CLR.L D3
+	CLR.L D4
+	MOVEA.L #0, A3
+
+	; src
+	MOVE.W EIR, D2
+	LSR.W #3, D2
+	ANDI.W #%11111111, D2 ; src
+	EXT.W D2
+
+	; dst
+	MOVE.W EIR, D3
+	ANDI.W #%111, D3
+
+	MULU.W #2, D3
+	MOVEA.L D3, A3
+	MOVE.W ET0(A3), D4
+	ADD.L D2, D4
+	MOVE.W D4, ET0(A3)
+
+	; update flags
+	SUBQ.L #2, SP
+	MOVE.L D4, -(SP)
+	JSR FLAGS
+	ADDQ.L #4, SP
+	MOVE.W (SP)+, ESR
+	
+	JMP FETCH
 ELSH:
+	CLR.L D2
+	CLR.L D3
+
+	; p
+	MOVE.W ESR, D2
+	LSR.W #8, D2
+	ANDI.W #%111, D2
+
+	; Rb
+	MOVE.W ESR, D3
+	LSR.W #4, D3
+	ANDI.W #%111, D3
+
+	MULU.W #2, D3
+	MOVEA.L D3, A3
+	BTST #0, ESR
+	BNE ELSH_N0
+	MOVE.W ET0(A3), D3
+	LSL.W D2, D3
+	JMP ELSH_END
+ELSH_N0:
+	LSR.W D2, D3
+ELSH_END:
+	; update flags
+	MOVE.W D3, ET0(A3)
+	SUBQ.L #2, SP
+	MOVE.L D3, -(SP)
+	JSR FLAGS
+	ADDQ.L #4, SP
+	MOVE.W (SP)+, ESR
+	
+	JMP FETCH
 
 	;--- FEXEC: FIN EJECUCION
 
@@ -163,16 +448,6 @@ ELSH:
 	;*** SALVO DECOD, que va en la siguiente seccion
 
 	; ESCRIBID VUESTRO CODIGO AQUI
-
-	;--- FSUBR: FIN SUBRUTINAS
-
-
-
-	;--- IDECOD: INICIO DECOD
-	;*** Tras la etiqueta DECOD, debeis implementar la subrutina de 
-	;*** decodificacion, que debera ser de libreria, siguiendo la interfaz
-	;*** especificada en el enunciado
-
 FLAGS:
 	MOVE.L D0, -(SP)
 	MOVE.L D1, -(SP)
@@ -190,7 +465,14 @@ FLAGSZ:
 	MOVE.L (SP)+, D1
 	MOVE.L (SP)+, D0
 	RTS
+	;--- FSUBR: FIN SUBRUTINAS
 
+
+
+	;--- IDECOD: INICIO DECOD
+	;*** Tras la etiqueta DECOD, debeis implementar la subrutina de 
+	;*** decodificacion, que debera ser de libreria, siguiendo la interfaz
+	;*** especificada en el enunciado
 DECOD:
 	; ESCRIBID VUESTRO CODIGO AQUI
 	MOVE.L D0, -(SP) ; save current value of D0
