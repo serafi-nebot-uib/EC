@@ -1,0 +1,5 @@
+STO T0, 3
+STO T1, 4
+EXIT
+1
+2

@@ -1,0 +1,6 @@
+SET #1, X2
+GON 5
+SET #-1, X2
+GON 5
+SET #10, X2
+EXIT

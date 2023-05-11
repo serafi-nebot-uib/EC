@@ -1,0 +1,8 @@
+SET #6, X2
+SET #-128, T0
+STIP T0, (X2)
+SET #16, T1
+STIP T1, (X2)
+EXIT
+10
+12

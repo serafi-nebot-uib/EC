@@ -202,11 +202,13 @@ EGOI:
 
 	JMP FETCH
 EGOZ:
-	BTST #0, ESR
+	MOVE.W ESR, D2
+	ANDI.W #%1, D2
 	BEQ FETCH
 	JMP EGOI
 EGON:
-	BTST #1, ESR
+	MOVE.W ESR, D2
+	ANDI.W #%10, D2
 	BEQ FETCH
 	JMP EGOI
 EEXIT:
@@ -408,7 +410,8 @@ ELSH:
 	JSR RGET
 	MOVE.W (SP)+, D3
 
-	BTST #0, EIR
+	MOVE.W EIR, D4
+	ANDI.W #0, D4
 	BNE ELSH_N0
 	LSL.W D2, D3
 	JMP ELSH_END
@@ -550,10 +553,10 @@ DECOD:
 	; ESCRIBID VUESTRO CODIGO AQUI
 	MOVE.L D0, -(SP) ; save current value of D0
 	MOVE.W 8(SP), D0 ; load instruction
-	BTST #15, D0
+	BTST.L #15, D0
 	BEQ.S DECOD_END ; if bit 15 = 0 jump to end
 	LSL.W #1, D0 ; left shift to "normalize" 5 bit opcode to 4 bit opcode
-	BTST #15, D0
+	BTST.L #15, D0
 	BNE.S DECOD_END ; if bit 15 = 1 jump to end
 	MOVE.W #%0111000000000000, D0 ; if bit 15 = 0 then instruction = EXIT
 DECOD_END:

@@ -1,0 +1,7 @@
+SET #1, X2
+SET #-1, X3
+SET #0, X4
+SET #-128, X5
+SET #127, X6
+SET #-1, X7
+EXIT
