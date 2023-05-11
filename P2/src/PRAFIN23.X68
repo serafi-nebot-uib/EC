@@ -7,18 +7,15 @@
 	ORG $1000
 
 EMEM:
-        DC.W $2020,$2021,$8000,$000A,$000C
-
-	; DC.W $E082,$E09B,$E0B4,$E01D,$2020,$C006,$2031,$C017
-	; DC.W $F160,$F170,$CE70,$3040,$EFFD,$501E,$4008,$8000
-	; DC.W $0001,$0001,$0001,$0001,$0001,$0001,$0000,$0000
-	; DC.W $0000
+	DC.W $E082,$E09B,$E0B4,$E01D,$2020,$C006,$2031,$C017
+	DC.W $F160,$F170,$CE70,$3040,$EFFD,$501E,$4008,$8000
+	DC.W $0001,$0001,$0001,$0001,$0001,$0001,$0000,$0000
+	DC.W $0000
 EIR:	DC.W 0 ;eregistro de instruccion
 EPC:	DC.W 0 ;econtador de programa
-	ORG $1020
 ET0:	DC.W 0 ;eregistro T0
 ET1:	DC.W 0 ;eregistro T1
-EX2:	DC.W 3 ;eregistro X2
+EX2:	DC.W 0 ;eregistro X2
 EX3:	DC.W 0 ;eregistro X3
 EX4:	DC.W 0 ;eregistro X4
 EX5:	DC.W 0 ;eregistro X5
@@ -92,7 +89,6 @@ JMPLIST:
 	; ESCRIBID EN CADA ETIQUETA LA FASE DE EJECUCION DE CADA INSTRUCCION
 ELOA:
 	CLR.L D2
-	CLR.L D3
 
 	MOVE.W EIR, D2
 	LSR.W #1, D2
@@ -109,7 +105,6 @@ ELOA:
 	JSR RSET
 	ADDQ.L #4, SP
 
-	; update flags
 	MOVE.W #%011, -(SP)
 	MOVE.L D2, -(SP)
 	JSR FLAGS
@@ -117,7 +112,6 @@ ELOA:
 
 	JMP FETCH
 ESTO:
-	CLR.L D2
 	CLR.L D3
 
 	MOVE.W EIR, D2
@@ -136,10 +130,7 @@ ESTO:
 
 	JMP FETCH
 ELOIP:
-	CLR.L D2
-	CLR.L D3
 	CLR.L D4
-	CLR.L D5
 
 	MOVE.W EIR, D2
 	LSR.W #4, D2
@@ -151,11 +142,11 @@ ELOIP:
 	MOVE.W D2, -(SP)
 	JSR RGET
 	MOVE.W (SP)+, D4
-	MOVE.W D4, D5
-	MULU.W #2, D5
-	MOVEA.L D5, A2
 
 	MOVE.W D3, -(SP)
+	MOVE.L D4, D5
+	MULU.W #2, D5
+	MOVEA.L D5, A2
 	MOVE.W EMEM(A2), -(SP)
 	JSR RSET
 	ADDQ.L #4, SP
@@ -166,38 +157,40 @@ ELOIP:
 	JSR RSET
 	ADDQ.L #4, SP
 
-	; update flags
 	MOVE.W #%011, -(SP)
 	MOVE.L D4, -(SP)
 	JSR FLAGS
 	ADDQ.L #6, SP
 
 	JMP FETCH
-
-; TODO: rewrite instructions below
 ESTIP:
-	CLR.L D2
-	CLR.L D3
-	MOVEA.L #0, A4
+	CLR.L D4
 
-	; load src
 	MOVE.W EIR, D2
 	ANDI.W #%1, D2
 
-	; load dst
 	MOVE.W EIR, D3
 	LSR.W #4, D3
 	ANDI.W #%111, D3
 
-	MULU.W #2, D2
-	MULU.W #2, D3
-	MOVEA.L D2, A2
-	MOVEA.L D3, A3
-	MOVE.W ET0(A3), D4
-	MULU.W #2, D4
-	MOVE.W D4, A4
-	MOVE.W ET0(A2), EMEM(A4)
-	ADDQ.W #1, ET0(A3)
+	MOVE.W D2, -(SP)
+	JSR RGET
+	MOVE.W (SP)+, D2
+
+	MOVE.W D3, -(SP)
+	JSR RGET
+	MOVE.W (SP)+, D4
+
+	MOVE.L D4, D5
+	MULU.W #2, D5
+	MOVEA.L D5, A4
+	MOVE.W D2, EMEM(A4)
+
+	ADDQ.W #1, D4
+	MOVE.W D3, -(SP)
+	MOVE.W D4, -(SP)
+	JSR RSET
+	ADDQ.L #4, SP
 
 	JMP FETCH
 EGOI:
@@ -219,39 +212,33 @@ EGON:
 EEXIT:
 	SIMHALT
 ECOPY:
-	; src
+	CLR.L D2
+
 	MOVE.W EIR, D2
 	LSR.W #4, D2
 	ANDI.W #%111, D2
 
-	; dst
 	MOVE.W EIR, D3
 	ANDI.W #%111, D3
 
-	MULU.W #2, D2
-	MULU.W #2, D3
-	MOVEA.L D2, A2
-	MOVEA.L D3, A3
-	MOVE.W ET0(A2), ET0(A3)
-
-	; update flags
-	SUBQ.L #2, SP
-	MOVE.L ET0(A3), -(SP)
-	JSR FLAGS
-	ADDQ.L #4, SP
+	MOVE.W D2, -(SP)
+	JSR RGET
 	MOVE.W (SP)+, D2
-	ANDI.B #%011, D2
-	ANDI.B #%100, ESR
-	OR.B D2, ESR
+
+	MOVE.W D3, -(SP)
+	MOVE.W D2, -(SP)
+	JSR RSET
+	ADDQ.L #4, SP
+
+	MOVE.W #%011, -(SP)
+	MOVE.L D2, -(SP)
+	JSR FLAGS
+	ADDQ.L #6, SP
 
 	JMP FETCH
 EADD:
 	CLR.L D2
 	CLR.L D3
-	CLR.L D4
-	MOVEA.L #0, A2
-	MOVEA.L #0, A3
-	MOVEA.L #0, A4
 
 	MOVE.W EIR, D2
 	LSR.W #8, D2
@@ -264,186 +251,175 @@ EADD:
 	MOVE.W EIR, D4
 	ANDI.W #%111, D4
 
-	MULU.W #2, D2
-	MULU.W #2, D3
-	MULU.W #2, D4
-	MOVEA.L D2, A2
-	MOVEA.L D3, A3
-	MOVEA.L D4, A4
-	MOVE.W ET0(A2), D2
-	MOVE.W ET0(A3), D3
-	ADD.L D2, D3
-	MOVE.W D3, ET0(A4)
+	MOVE.W D2, -(SP)
+	JSR RGET
+	MOVE.W (SP)+, D2
 
-	; update flags
-	SUBQ.L #2, SP
-	MOVE.L ET0(A3), -(SP)
-	JSR FLAGS
+	MOVE.W D3, -(SP)
+	JSR RGET
+	MOVE.W (SP)+, D3
+
+	ADD.L D2, D3
+	MOVE.W D4, -(SP)
+	MOVE.W D3, -(SP)
+	JSR RSET
 	ADDQ.L #4, SP
-	MOVE.W (SP)+, ESR
+
+	MOVE.W #%111, -(SP)
+	MOVE.L D3, -(SP)
+	JSR FLAGS
+	ADDQ.L #6, SP
 
 	JMP FETCH
 ESUB:
 	CLR.L D2
 	CLR.L D3
-	CLR.L D4
-	MOVEA.L #0, A4
 
-	; Ra
 	MOVE.W EIR, D2
 	LSR.W #8, D2
 	ANDI.W #%111, D2
 
-	; Rb
 	MOVE.W EIR, D3
 	LSR.W #4, D3
 	ANDI.W #%111, D3
 
-	; Rc
 	MOVE.W EIR, D4
 	ANDI.W #%111, D4
 
-	; subtract
+	MOVE.W D2, -(SP)
+	JSR RGET
+	MOVE.W (SP)+, D2
+
+	MOVE.W D3, -(SP)
+	JSR RGET
+	MOVE.W (SP)+, D3
+
 	NOT.L D2
 	ADDQ.L #1, D2
-	ADD.L D3, D2
-	MULU.W #2, D4
-	MOVEA.L D4, A4
-	MOVE.W D2, ET0(A4)
+	ADD.L D2, D3
 
-	; update flags
-	SUBQ.L #2, SP
-	MOVE.L D2, -(SP)
-	JSR FLAGS
+	MOVE.W D4, -(SP)
+	MOVE.W D3, -(SP)
+	JSR RSET
 	ADDQ.L #4, SP
-	MOVE.W (SP)+, ESR
+
+	MOVE.W #%111, -(SP)
+	MOVE.L D3, -(SP)
+	JSR FLAGS
+	ADDQ.L #6, SP
 
 	JMP FETCH
 EAND:
-	CLR.L D2
 	CLR.L D3
-	CLR.L D4
-	MOVEA.L #0, A4
 
-	; Ra
 	MOVE.W EIR, D2
 	LSR.W #8, D2
 	ANDI.W #%111, D2
 
-	; Rb
 	MOVE.W EIR, D3
 	LSR.W #4, D3
 	ANDI.W #%111, D3
 
-	; Rc
 	MOVE.W EIR, D4
 	ANDI.W #%111, D4
 
-	AND.W D2, D3
-	MULU.W #2, D4
-	MOVEA.L D4, A4
-	MOVE.W D3, ET0(A4)
-
-	; update flags
-	SUBQ.L #2, SP
-	MOVE.L ET0(A4), -(SP)
-	JSR FLAGS
-	ADDQ.L #4, SP
+	MOVE.W D2, -(SP)
+	JSR RGET
 	MOVE.W (SP)+, D2
-	ANDI.B #%011, D2
-	ANDI.B #%100, ESR
-	OR.B D2, ESR
+
+	MOVE.W D3, -(SP)
+	JSR RGET
+	MOVE.W (SP)+, D3
+
+	AND.W D2, D3
+	MOVE.W D4, -(SP)
+	MOVE.W D3, -(SP)
+	JSR RSET
+	ADDQ.L #4, SP
+
+	MOVE.W #%111, -(SP)
+	MOVE.L D3, -(SP)
+	JSR FLAGS
+	ADDQ.L #6, SP
 
 	JMP FETCH
 ESET:
 	CLR.L D2
-	CLR.L D3
 
 	MOVE.W EIR, D2
 	LSR.W #3, D2
-	ANDI.W #%11111111, D2 ; src
+	ANDI.W #%11111111, D2
 	EXT.W D2
 
 	MOVE.W EIR, D3
-	ANDI.W #%111, D3 ; dst
+	ANDI.W #%111, D3
 
-	MULU.W #2, D3
-	MOVEA.L D3, A3
-	MOVE.W D2, ET0(A3)
+	MOVE.W D3, -(SP)
+	MOVE.W D2, -(SP)
+	JSR RSET
+	ADDQ.L #4, SP
 
-	; update flags
-	SUBQ.L #2, SP
+	MOVE.W #%011, -(SP)
 	MOVE.L D2, -(SP)
 	JSR FLAGS
-	ADDQ.L #4, SP
-	MOVE.W (SP)+, D2
-	ANDI.B #%011, D2
-	ANDI.B #%100, ESR
-	OR.B D2, ESR
+	ADDQ.L #6, SP
 
 	JMP FETCH
 EADQ:
 	CLR.L D2
-	CLR.L D3
 	CLR.L D4
-	MOVEA.L #0, A3
 
-	; src
 	MOVE.W EIR, D2
 	LSR.W #3, D2
-	ANDI.W #%11111111, D2 ; src
+	ANDI.W #%11111111, D2
 	EXT.W D2
 
-	; dst
 	MOVE.W EIR, D3
 	ANDI.W #%111, D3
 
-	MULU.W #2, D3
-	MOVEA.L D3, A3
-	MOVE.W ET0(A3), D4
-	ADD.L D2, D4
-	MOVE.W D4, ET0(A3)
+	MOVE.W D3, -(SP)
+	JSR RGET
+	MOVE.W (SP)+, D4
 
-	; update flags
-	SUBQ.L #2, SP
+	ADD.L D2, D4
+	MOVE.W D3, -(SP)
+	MOVE.W D4, -(SP)
+	JSR RSET
+	ADDQ.L #4, SP
+
+	MOVE.W #%111, -(SP)
 	MOVE.L D4, -(SP)
 	JSR FLAGS
-	ADDQ.L #4, SP
-	MOVE.W (SP)+, ESR
-	
+	ADDQ.L #6, SP
+
 	JMP FETCH
 ELSH:
-	CLR.L D2
 	CLR.L D3
 
-	; p
 	MOVE.W EIR, D2
 	LSR.W #8, D2
 	ANDI.W #%111, D2
 
-	; Rb
 	MOVE.W EIR, D3
 	LSR.W #4, D3
 	ANDI.W #%111, D3
 
-	MULU.W #2, D3
-	MOVEA.L D3, A3
+	MOVE.W D3, -(SP)
+	JSR RGET
+	MOVE.W (SP)+, D3
+
 	BTST #0, EIR
 	BNE ELSH_N0
-	MOVE.W ET0(A3), D3
 	LSL.W D2, D3
 	JMP ELSH_END
 ELSH_N0:
 	LSR.W D2, D3
 ELSH_END:
-	; update flags
-	MOVE.W D3, ET0(A3)
-	SUBQ.L #2, SP
+	MOVE.W #%111, -(SP)
 	MOVE.L D3, -(SP)
 	JSR FLAGS
-	ADDQ.L #4, SP
-	MOVE.W (SP)+, ESR
-	
+	ADDQ.L #6, SP
+
 	JMP FETCH
 
 	;--- FEXEC: FIN EJECUCION
@@ -459,6 +435,7 @@ ELSH_END:
 RGET:
 	MOVE.L D0, -(SP)
 	MOVE.L A0, -(SP)
+	CLR.L D0
 	MOVE.W 12(SP), D0
 
 	MULU #10, D0
@@ -499,6 +476,7 @@ RSET:
 	MOVE.L D0, -(SP)
 	MOVE.L D1, -(SP)
 	MOVE.L A0, -(SP)
+	CLR.L D0
 	MOVE.W 18(SP), D0
 	MOVE.W 16(SP), D1
 
