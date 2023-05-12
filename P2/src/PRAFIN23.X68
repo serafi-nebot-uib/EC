@@ -5,14 +5,16 @@
 * Description: Emulador de la HAL9000
 *-----------------------------------------------------------
 	ORG $1000
-
 EMEM:
-	DC.W $E082,$E09B,$E0B4,$E01D,$2020,$C006,$2031,$C017
-	DC.W $F160,$F170,$CE70,$3040,$EFFD,$501E,$4008,$8000
-	DC.W $0001,$0001,$0001,$0001,$0001,$0001,$0000,$0000
-	DC.W $0000
+	DC.W $000F,$C012,$400A,$D222,$8000,$CA22,$8000,$0001
+
+	; DC.W $E082,$E09B,$E0B4,$E01D,$2020,$C006,$2031,$C017
+	; DC.W $F160,$F170,$CE70,$3040,$EFFD,$501E,$4008,$8000
+	; DC.W $0001,$0001,$0001,$0001,$0001,$0001,$0000,$0000
+	; DC.W $0000
 EIR:	DC.W 0 ;eregistro de instruccion
 EPC:	DC.W 0 ;econtador de programa
+	ORG $1020
 ET0:	DC.W 0 ;eregistro T0
 ET1:	DC.W 0 ;eregistro T1
 EX2:	DC.W 0 ;eregistro X2
@@ -34,10 +36,10 @@ FETCH:
 	
 	        ; ESCRIBID VUESTRO CODIGO AQUI	    
 	MOVE.W EPC, D1
-	MULU #2, D1
+	MULU #2, D1 ; multiply address by 2 (each position contains 2 Bytes)
 	MOVEA.W D1, A0
-	MOVE.W EMEM(A0), EIR
-	ADDQ.W #1, EPC
+	MOVE.W EMEM(A0), EIR ; load current instruction to EIR
+	ADDQ.W #1, EPC ; increase EPC by 1 *after* fetch
 	;--- FFETCH: FIN FETCH
 
     ;--- IFETCH: INICIO FETCH
@@ -56,6 +58,8 @@ FETCH:
     ;--- IBREXEC: INICIO SALTO A FASE DE EJECUCION
         ;*** Esta seccion se usa para saltar a la fase de ejecucion
         ;*** NO HACE FALTA MODIFICARLA
+	; multiply instruction index by 6 (each jump instruction occuppies 6
+	; bytes)
 	MULU #6, D1
 	MOVEA.L D1, A1
 	JMP JMPLIST(A1)
@@ -290,8 +294,8 @@ ESUB:
 	JSR RGET
 	MOVE.W (SP)+, D3
 
-	NOT.L D2
-	ADDQ.L #1, D2
+	NOT.W D3
+	ADDQ.L #1, D3
 	ADD.L D2, D3
 
 	MOVE.W D4, -(SP)
@@ -391,29 +395,37 @@ EADQ:
 	JMP FETCH
 ELSH:
 	CLR.L D3
+	CLR.L D5
 
 	MOVE.W EIR, D2
 	LSR.W #8, D2
 	ANDI.W #%111, D2
-
+	BNE ELSH_N8
+	ORI.W #%1000, D2
+ELSH_N8:
 	MOVE.W EIR, D3
 	LSR.W #4, D3
 	ANDI.W #%111, D3
 
 	MOVE.W D3, -(SP)
 	JSR RGET
-	MOVE.W (SP)+, D3
+	MOVE.W (SP)+, D5
 
 	MOVE.W EIR, D4
-	ANDI.W #0, D4
+	ANDI.W #1, D4
 	BNE ELSH_N0
-	LSL.W D2, D3
+	LSL.L D2, D5
 	JMP ELSH_END
 ELSH_N0:
-	LSR.W D2, D3
+	LSR.L D2, D5
 ELSH_END:
+	MOVE.W D3, -(SP)
+	MOVE.W D5, -(SP)
+	JSR RSET
+	ADDQ.L #4, SP
+
 	MOVE.W #%111, -(SP)
-	MOVE.L D3, -(SP)
+	MOVE.L D5, -(SP)
 	JSR FLAGS
 	ADDQ.L #6, SP
 
@@ -431,11 +443,12 @@ RGET:
 	MOVE.L D0, -(SP)
 	MOVE.L A0, -(SP)
 	CLR.L D0
-	MOVE.W 12(SP), D0
+	MOVE.W 12(SP), D0 ; load register number
 
+	; multiply D0 by 10 (each register instruction batch occuppies 10 Bytes)
 	MULU #10, D0
 	MOVEA.L D0, A0
-	JMP RGLIST(A0)
+	JMP RGLIST(A0) ; jump to corresponding register number
 RGLIST:
 RGT0:
 	MOVE.W ET0, D0
@@ -472,12 +485,13 @@ RSET:
 	MOVE.L D1, -(SP)
 	MOVE.L A0, -(SP)
 	CLR.L D0
-	MOVE.W 18(SP), D0
-	MOVE.W 16(SP), D1
+	MOVE.W 18(SP), D0 ; load register number
+	MOVE.W 16(SP), D1 ; load register value
 
+	; multiply D0 by 10 (each register instruction batch occuppies 10 Bytes)
 	MULU #10, D0
 	MOVEA.L D0, A0
-	JMP RSLIST(A0)
+	JMP RSLIST(A0) ; jump to corresponding register number
 RSLIST:
 RST0:
 	MOVE.W D1, ET0
@@ -513,22 +527,27 @@ FLAGS:
 	MOVE.L D0, -(SP)
 	MOVE.L D1, -(SP)
 	MOVE.L D2, -(SP)
-	MOVE.L 16(SP), D0
-	MOVE.W 20(SP), D2
+	MOVE.L 16(SP), D0 ; load value
+	MOVE.W 20(SP), D2 ; load selected flags to update
 	MOVE.L D0, D1
 
+	; shift right 14 bits so that negative and carry bits
+	; can be OR'ed together with Z flag
 	LSR.L #8, D1
 	LSR.L #6, D1
 	ANDI.W #%110, D1
+	; check if value is 0
 	ANDI.W #$ffff, D0
-	BNE FLAGSS
-	ORI.W #%001, D1
-FLAGSS:
+	BNE FLAGSNZ
+	ORI.W #%001, D1 ; value = 0 -> set Z bit to 1
+FLAGSNZ:
+	; mask selected flags' values
 	AND.W D2, D1
+	; negate mask so that selected flags are cleared
 	NOT.W D2
 	ANDI.W #%111, D2
-	AND.W D2, ESR
-	OR.W D1, ESR
+	AND.W D2, ESR ; clear selected flags
+	OR.W D1, ESR ; update selected flags
 	MOVE.L (SP)+, D2
 	MOVE.L (SP)+, D1
 	MOVE.L (SP)+, D0
@@ -536,7 +555,7 @@ FLAGSS:
 	;--- FSUBR: FIN SUBRUTINAS
 
     ;--- IDECOD: INICIO DECOD
-        ;*** Tras la etiqueta DECOD, debeis implementar la subrutina de 
+        ;*** Tras la etiqueta DECOD, debeis implementar la subrutina de
         ;*** decodificacion, que debera ser de libreria, siguiendo la interfaz
         ;*** especificada en el enunciado
 DECOD:
