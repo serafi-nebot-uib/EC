@@ -1,0 +1,5 @@
+SET #-1, X2
+ADQ #1, X2
+ADQ #127, X2
+ADQ #-128, X2
+EXIT

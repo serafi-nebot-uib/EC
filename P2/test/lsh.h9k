@@ -1,0 +1,5 @@
+SET #15, X2
+LSH #2, X2, #1
+SET #-1, X3
+LSH #0, X3, #0
+EXIT

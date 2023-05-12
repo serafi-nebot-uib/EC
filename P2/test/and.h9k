@@ -1,0 +1,7 @@
+SET #15, X2
+SET #-1, X3
+AND X2, X3, T0
+SET #-86, X2
+SET #15, X3
+AND X2, X3, T1
+EXIT

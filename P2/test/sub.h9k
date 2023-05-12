@@ -1,0 +1,7 @@
+SET #-100, X2
+SET #-50, X3
+SET #0, X4
+SET #0, X5
+SUB X2, X3, T0
+SUB X4, X5, T1
+EXIT
