@@ -152,23 +152,24 @@ item occupies 1 word (16 bits) and the first item is the value pointed by the \e
 
 \pagebreak
 \section{Fetch phase}
-The fetch phase of the HAL9000 is fairly simple:
+The fetch phase of the HAL9000 is fairly simple. It can be best described by the following
+precedure:
 \begin{enumerate}
 	\item Load 16 bits from ememory pointed by $\mathbf{EPC}$ into $\mathbf{EIR}$
 	\item Increase $\mathbf{EPC}$ by 1
 \end{enumerate}
-Actually, it is not that simple. We have to take into account the fact that each memory cell of the HAL9000, unlike the Motorola
+We have to take into account the fact that each memory cell of the HAL9000, unlike the Motorola
 68000, holds 16 bits, instead of 8. This is why the $\mathbf{EPC}$ register is incremented by 1
 instead of 2. Therefore, in order to load the instructions from ememory directly, the value of
 $\mathbf{EPC}$ has to be multiplied by 2 ($16 / 8 = 2$).
 
-So, the updated version of the previous steps is:
+So, the updated version of the previous procedure is:
 \begin{enumerate}
 	\item Load 16 bits from ememory pointed by $\mathbf{EPC} \cdot 2$ into $\mathbf{EIR}$
 	\item Increase $\mathbf{EPC}$ by 1
 \end{enumerate}
 
-This steps can be implemented like the following Motorola 68000 assembly:
+This procedure can be implemented with the following Motorola 68000 assembly code:
 \begin{lstlisting}[style=customasm, caption={HAL9000 emulator fetch phase code}, label={code:fetchcode}]
 MOVE.W EPC, D1
 MULU #2, D1		; multiply address by 2 (each position contains 2 Bytes)
@@ -306,13 +307,10 @@ MOVE.W (SP)+, D1	; retrieve instruction's id
 
 \pagebreak
 \section{Execution phase}
-\subsection{Instruction}
-
-Each instruction has been implemented inside its own label so, each einstruction's execution code is
-found at a different memory location (not all instruction execution occupy the same space!).
-
-Therefore, a jump list has been used in order to jump to the appropiate einstruction's execution
-code:
+\subsection{Instruction selection}
+After the decode phase, we know which einstruction to execute. More specifically, we know the ID of
+the einstruction to execute. In order to execute the correct einstruction, a jump list has been used
+to jump to the appropiate einstruction's implementation code:
 \begin{lstlisting}[style=customasm, caption={HAL9000 instruction execution jump list}, label={code:h9kexcjmplst}]
 	; assuming D1 contains the einstruction's id
 	MULU #6, D1 ; multiply by 6 as each JMP instruction occupies 6 Bytes
@@ -340,16 +338,17 @@ $\mathbf{JMPLIST}$ is an ordered list of $\mathbf{JMP}$ instructions with the co
 einstruction's labels. For instance, if the current einstruction to execute is $\mathbf{EADD}$, the
 value of $\mathbf{D1}$ will be 9, which is $\mathbf{EADD}$'s ID (see Table
 \ref{table:halinstructions}). Then, $\mathbf{D1}$ will be multiplied by 6 to point to the 9'th entry
-of the $\mathbf{JMPLIST}$.
+of the $\mathbf{JMPLIST}$. Finally, using the value of $\mathbf{D1}$ to index $\mathbf{JMPLIST}$,
+execution is redirected to the 9'th entry of $\mathbf{JMPLIST}$ and, from there, redirected to the
+implementation of $\mathbf{EADD}$'s execution.
 
-\pagebreak
 \subsection{Instruction parsing}
 Before an einstruction can be executed, the operands, which are encoded within the einstruction,
-must be retrieved. For this, the einstruction shifted right the necessary amount so that the operand
-is aligned to the LSb. And, finally, perform and AND operation to mask the operand value.
+must be retrieved. For this, the einstruction is shifted right the necessary amount so that the operand
+is aligned to the LSb and then masked with an AND operation to obtain the operand value.
 
 For example, the $\mathbf{k}$ operand of the $\mathbf{ESET}$ instruction can be parsed with the
-following steps\footnote{The \texttt{>>} operator refers to the logic shift right operation. The
+following steps\footnote{The \texttt{>>} operator refers to the logic shift right operation and the
 	\texttt{\&} operator refers to the logic AND operation}:
 \begin{enumerate}
 	\item \verb|11100kkkkkkkkccc >> 3 = 00011100kkkkkkkk|
@@ -375,19 +374,24 @@ The following is a procedure used to describe the generic implementation of eins
 	\item Jump to fetch phase.\footnote{$\mathbf{EXIT}$ is the only
 		exception, as it stops execution.}
 \end{enumerate}
+\vfill
+\pagebreak
 For example, the $\mathbf{ELOIP}$ implementation performs all actions described above:
 \begin{lstlisting}[style=customasm, caption={HAL9000 LOIP instruction implementation}, label={code:h9eloipimpl}]
 LOIP:
 	CLR.L D4
 
-	MOVE.W EIR, D2 ; load Xb operand to D2
+	; load Xb operand to D2
+	MOVE.W EIR, D2
 	LSR.W #4, D2
 	ANDI.W #%111, D2
 
-	MOVE.W EIR, D3 ; load Ti operand to D3
+	; load Ti operand to D3
+	MOVE.W EIR, D3
 	ANDI.W #%1, D3
 
-	MOVE.W D2, -(SP) ; get value of Xb
+	; get value of Xb
+	MOVE.W D2, -(SP)
 	JSR RGET
 	MOVE.W (SP)+, D4
 
@@ -415,7 +419,6 @@ LOIP:
 
 	JMP FETCH
 \end{lstlisting}
-\vfill
 
 \pagebreak
 \appendix
