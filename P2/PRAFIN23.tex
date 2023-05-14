@@ -1,5 +1,5 @@
 \documentclass[11pt, a4paper]{article}
-\title{Estructura de Computadores I (2022-2023)}
+\title{Ingeniería Informatica (UIB)\\Estructura de Computadores I (2022-2023)\\Grupo 301}
 \author{Serafí Nebot Ginard (41617163C)\\sng656@id.uib.eu}
 \date{}
 \thispagestyle{empty}
@@ -13,6 +13,9 @@
 \usepackage{listings}
 \usepackage{indentfirst}
 \usepackage{titling}
+\usepackage[flushleft]{threeparttable}
+\usepackage{framed}
+\usepackage[page,toc,titletoc,title]{appendix}
 \renewcommand\maketitlehooka{\null\mbox{}\vfill}
 \renewcommand\maketitlehookd{\vfill\null}
 
@@ -50,8 +53,130 @@
 \pagebreak
 
 \tableofcontents
-\pagebreak
 
+\pagebreak
+\section{Acronyms}
+\textbf{MS[B,W]}: Most Singificant Byte/Word (Byte/Word whose address is greater)
+
+\textbf{LS[B,W]}: Least Singificant Byte/Word (Byte/Word whose address is lower)
+
+When referencing anything related to the HAL9000, the emulated machine, has been prepended with an
+"e" to dinstinguish between the host machine and the emulated machine.
+
+\pagebreak
+\section{Reference tables}
+
+\subsection{Subroutines}
+Input and Output columns indicate the subroutine's stack layout before and after its execution. Each
+item occupies 1 word (16 bits) and the first item is the value pointed by the \emph{Stack Pointer}
+($\mathbf{SP}$).
+\begin{table}[h!]
+	\centering
+	{
+		\fontfamily{lmtt}
+		\selectfont
+		\begin{threeparttable}
+			\begin{tabular}{ | l | l |  l | l | l | }
+				\hline
+				\textbf{Name} & \textbf{Description} & \textbf{Type} & \textbf{Input} & \textbf{Output} \\
+				\hline
+				RGET & Get value of eregister & library &
+					\begin{tabular}[t]{ c }
+						eregister number
+					\end{tabular} &
+					\begin{tabular}[t]{ c }
+						eregister value
+					\end{tabular} \\
+				\hline
+				RSET & Set value of eregister & library &
+					\begin{tabular}[t]{ c }
+						eregister value \\
+						eregister number
+					\end{tabular} &
+					\begin{tabular}[t]{ c }
+						eregister value \\
+						eregister number
+					\end{tabular} \\
+				\hline
+				FLAGS & Update specific eflags & library & 
+					\begin{tabular}[t]{ c }
+						value (MSW) \\
+						value (LSW) \\
+						selected eflags
+					\end{tabular} &
+					\begin{tabular}[t]{ c }
+						value (MSW) \\
+						value (LSW) \\
+						selected eflags
+					\end{tabular} \\
+				\hline
+			\end{tabular}
+			\begin{tablenotes}
+				\small
+				\item 
+			\end{tablenotes}
+		\end{threeparttable}
+	}
+	\label{table:subroutines}
+	\caption{Subroutines}
+\end{table}
+
+\subsection{Commonly used registers}
+\begin{table}[h!]
+	\centering
+	{
+		\fontfamily{lmtt}
+		\selectfont
+		\begin{tabular}{ | l | l | l | }
+			\hline
+			\textbf{Name} & \textbf{Phase} & \textbf{Description} \\
+			\hline
+			D2 & Execution & Instruction's first operand (if needed) \\
+			\hline
+			D3 & Execution & Instruction's second operand (if needed) \\
+			\hline
+			D4 & Execution & Instruction's third operand (if needed) \\
+			\hline
+			A2 & Execution & Instruction's first operand's ememory address (if needed) \\
+			\hline
+			A3 & Execution & Instruction's second operand's ememory address (if needed) \\
+			\hline
+			A4 & Execution & Instruction's third operand's ememory address (if needed) \\
+			\hline
+		\end{tabular}
+	}
+	\label{table:registers}
+	\caption{Commonly used registers}
+\end{table}
+
+\pagebreak
+\section{Fetch phase}
+The fetch phase of the HAL9000 is fairly simple:
+\begin{enumerate}
+	\item Load 16 bits from ememory pointed by $\mathbf{EPC}$ into $\mathbf{EIR}$
+	\item Increase $\mathbf{EPC}$ by 1
+\end{enumerate}
+Actually, it is not that simple. We have to take into account the fact that each memory cell of the HAL9000, unlike the Motorola
+68000, holds 16 bits, instead of 8. This is why the $\mathbf{EPC}$ register is incremented by 1
+instead of 2. Therefore, in order to load the instructions from ememory directly, the value of
+$\mathbf{EPC}$ has to be multiplied by 2 ($16 / 8 = 2$).
+
+So, the updated version of the previous steps is:
+\begin{enumerate}
+	\item Load 16 bits from ememory pointed by $\mathbf{EPC} \cdot 2$ into $\mathbf{EIR}$
+	\item Increase $\mathbf{EPC}$ by 1
+\end{enumerate}
+
+This steps can be implemented like the following Motorola 68000 assembly:
+\begin{lstlisting}[style=customasm, caption={HAL9000 emulator fetch phase code}, label={code:fetchcode}]
+MOVE.W EPC, D1
+MULU #2, D1		; multiply address by 2 (each position contains 2 Bytes)
+MOVEA.W D1, A0
+MOVE.W EMEM(A0), EIR	; load current instruction to EIR
+ADDQ.W #1, EPC		; increase EPC by 1 after fetch
+\end{lstlisting}
+
+\pagebreak
 \section{Decode phase}
 \subsection{Decode phase introduction}
 
@@ -97,7 +222,7 @@ In order to take advantage of this pattern, let's separate the HAL9000 instructi
 an exception.
 
 \noindent\textbf{Group 0} \\
-Instructions with IDs from 0 to 6 follow the pattern:
+Instructions with ID from 0 to 6 follow the pattern:
 \begin{equation*}
 	\mathbf{0x_3x_2x_1k_{12}k_{11}k_{10}k_9k_8k_7k_6k_5k_4k_3k_2k_1}
 \end{equation*}
@@ -110,19 +235,19 @@ bits:
 \end{equation*}
 
 \noindent\textbf{Group 1} \\
-Instructions with IDs from 8 to 14 follow the pattern:
+Instructions with ID from 8 to 14 follow the pattern:
 \begin{equation*}
 	\mathbf{1x_4x_3x_2x_1k_{11}k_{10}k_9k_8k_7k_6k_5k_4k_3k_2k_1}
 \end{equation*}
 where $\mathbf{x_{1 \ldots 4}}$ encode the instruction's ID as an unsigned binary number and
 $\mathbf{k_{1 \ldots 11}}$ encode the rest of the instruction. This scenario may be resolved by
-setting the MSb to 0 and logically shifting right the whole instructin by 11 bits:
+setting the MSb to 0 and logically shifting right the whole instruction by 11 bits:
 \begin{equation*}
 	\mathbf{000000000000x_4x_3x_2x_1}
 \end{equation*}
 
 \noindent\textbf{The exception} \\
-Instruction with ID 7 is the only one which does not follow the same pattern:
+Instruction with ID 7 is the only one which does not follow any pattern:
 \begin{equation*}
 	\mathbf{10k_{14}k_{13}k_{12}k_{11}k_{10}k_9k_8k_7k_6k_5k_4k_3k_2k_1}
 \end{equation*}
@@ -148,21 +273,77 @@ The decode algorithm has been implemented in the following manner:
 		exception}; replace opcode with a hardcoded value).
 	\item Shift right 12 bits to obtain the instruction's opcode.
 \end{enumerate}
-The decode algorithm can be translated into the following Motorola 68000 code:
-\begin{lstlisting}[style=customasm, caption={HAL9000 instruction decoder}, label={code:instrdecoder}]
-	; assuming instruction to decode is in D0
-	BTST #15, D0
-	BEQ.S DECOD_END ; if bit 15 = 0 jump to end
-	LSL.W #1, D0 ; left shift to "normalize" 5 bit opcode to 4 bit opcode
-	BTST #15, D0
-	BNE.S DECOD_END ; if bit 15 = 1 jump to end
-	MOVE.W #%0111000000000000, D0 ; if bit 15 = 0 then instruction = EXIT
+The decode algorithm can be translated into the following Motorola 68000 subroutine code:
+\begin{lstlisting}[style=customasm, caption={HAL9000 instruction decoder subroutine}, label={code:h9kdecoder}]
+DECOD:
+	MOVE.L D0, -(SP)		; save current value of D0
+	MOVE.W 8(SP), D0		; load instruction
+	BTST.L #15, D0
+	BEQ.S DECOD_END			; if bit 15 = 0 jump to end
+	LSL.W #1, D0			; logically shift left to "normalize"
+					; 5 bit opcode to 4 bit opcode
+	BTST.L #15, D0
+	BNE.S DECOD_END			; if bit 15 = 1 jump to end
+	MOVE.W #%0111000000000000, D0	; if bit 15 = 0 then instruction = EXIT
 DECOD_END:
-	; shift right the four MSb to the four LSb
+	; logically shift right the four MSb to the four LSb
 	LSR.W #8, D0
 	LSR.W #4, D0
-	; instruction's opcode is in D0
+	MOVE.W D0, 10(SP)		; save instruction ID to reserved space
+	MOVE.L (SP)+, D0		; restore value of D0
+	RTS
 \end{lstlisting}
+
+Which can be used along with the following m68k code to decode the instruction in $\mathbf{ESR}$:
+\begin{lstlisting}[style=customasm, caption={HAL9000 instruction decoder subroutine call}, label={code:h9kdecodercall}]
+SUBQ.W #2, SP		; reserve 1 word for instruction id
+MOVE.W EIR, -(SP)	; pass instruction to decode
+JSR DECOD
+ADDQ.W #2, SP		; pop instruction to decode from stack
+MOVE.W (SP)+, D1	; retrieve instruction's id
+\end{lstlisting}
+
+\pagebreak
+\section{Execution phase}
+Each instruction has been implemented inside its own label so, each einstruction's execution code is
+found at a different memory location (not all instruction execution occupy the same space!).
+
+Therefore, a jump list has been used in order to jump to the appropiate einstruction's execution
+code:
+\begin{lstlisting}[style=customasm, caption={HAL9000 instruction execution jump list}, label={code:h9kexcjmplst}]
+	; assuming D1 contains the einstruction's id
+	MULU #6, D1 ; multiply by 6 as each JMP instruction occupies 6 Bytes
+	MOVEA.L D1, A1
+	JMP JMPLIST(A1)
+JMPLIST:
+	JMP ELOA
+	JMP ESTO
+	JMP ELOIP
+	JMP ESTIP
+	JMP EGOI
+	JMP EGOZ
+	JMP EGON
+	JMP EEXIT
+	JMP ECOPY
+	JMP EADD
+	JMP ESUB
+	JMP EAND
+	JMP ESET
+	JMP EADQ
+	JMP ELSH
+\end{lstlisting}
+
+$\mathbf{JMPLIST}$ is an ordered list of $\mathbf{JMP}$ instructions with the corresponding
+einstruction's labels. For instance, if the current einstruction to execute is $\mathbf{EADD}$, the
+value of $\mathbf{D1}$ will be 9, which is $\mathbf{EADD}$'s ID (see Table
+\ref{table:halinstructions}). Then, $\mathbf{D1}$ will be multiplied by 6 to point to the 9'th entry
+of the $\mathbf{JMPLIST}$.
+
+\pagebreak
+\appendix
+\begin{appendices}
+	\section{HAL9000 Compiler}
+\end{appendices}
 
 \end{document}
 

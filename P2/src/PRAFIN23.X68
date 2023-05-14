@@ -28,26 +28,26 @@ FETCH:
         ;*** En esta seccion debeis introducir el codigo necesario para cargar
         ;*** en el EIR la siguiente instruccion a ejecutar, indicada por el EPC,
 	    ;*** y dejar listo el EPC para que apunte a la siguiente instruccion
-	
-	        ; ESCRIBID VUESTRO CODIGO AQUI	    
+
+		; ESCRIBID VUESTRO CODIGO AQUI
 	MOVE.W EPC, D1
 	MULU #2, D1 ; multiply address by 2 (each position contains 2 Bytes)
 	MOVEA.W D1, A0
 	MOVE.W EMEM(A0), EIR ; load current instruction to EIR
-	ADDQ.W #1, EPC ; increase EPC by 1 *after* fetch
+	ADDQ.W #1, EPC ; increase EPC by 1 after fetch
 	;--- FFETCH: FIN FETCH
 
-    ;--- IFETCH: INICIO FETCH
-        ;*** En esta seccion debeis introducir el codigo necesario para cargar
-        ;*** en el EIR la siguiente instruccion a ejecutar, indicada por el EPC,
-	    ;*** y dejar listo el EPC para que apunte a la siguiente instruccion
-	
-	        ; ESCRIBID VUESTRO CODIGO AQUI	    
-	SUBQ.W #2, SP
-	MOVE.W EIR, -(SP)
+    ;--- IBRDECOD: INICIO SALTO A DECOD
+        ;*** En esta seccion debeis preparar la pila para llamar a la subrutina
+        ;*** DECOD, llamar a la subrutina, y vaciar la pila correctamente,
+        ;*** almacenando el resultado de la decodificacion en D1
+
+		; ESCRIBID VUESTRO CODIGO AQUI
+	SUBQ.W #2, SP ; reserve 1 word for instruction id
+	MOVE.W EIR, -(SP) ; pass instruction to decode
 	JSR DECOD
-	ADDQ.W #2, SP
-	MOVE.W (SP)+, D1
+	ADDQ.W #2, SP ; pop instruction to decode from stack
+	MOVE.W (SP)+, D1 ; retrieve instruction's id
 	;--- FBRDECOD: FIN SALTO A DECOD
 
     ;--- IBREXEC: INICIO SALTO A FASE DE EJECUCION
@@ -82,11 +82,11 @@ JMPLIST:
 	; ESCRIBID EN CADA ETIQUETA LA FASE DE EJECUCION DE CADA INSTRUCCION
 
 	; NOTE on the following list of EINSTRUCTIONS implementations
-	;   - RGET and RSET subroutines are used to get or set EREGISTERS
+	;   - RGET and RSET subroutines are used to get or set eregisters
 	;   - EMEM is accessed with indexed mode
-	;       (indexes are multiplied by 2 as each EMEM cell contains 2 Bytes)
-	;   - AND instruction is used in favour of BTST as the former allows
-	;       all possible sizes (BTST only allows byte and longword)
+	;       (indexes are multiplied by 2 as each ememory cell contains 2 Bytes)
+	;   - AND instruction is used in instead of BTST as the former allows
+	;       all possible sizes and the latter only allows byte and longword
 	;   - FLAGS subroutine is used to update specific flags
 	;   - Arithmetic operations are performed with longword size as the
 	;       result will contain the carry bit (passed to FLAGS subroutine)
