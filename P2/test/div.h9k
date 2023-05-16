@@ -10,5 +10,5 @@ SUB T1, X2, X2
 ADQ 1, X3
 GOI 4
 EXIT
-10
-3
+123
+7

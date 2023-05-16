@@ -18,6 +18,11 @@
 \usepackage[page,toc,titletoc,title]{appendix}
 \usepackage{enumitem}
 \usepackage{caption}
+\usepackage{color}
+
+\definecolor{light-red}{rgb}{1, 0.18, 0.26}
+\definecolor{light-green}{rgb}{0.18, 1, 0.26}
+\definecolor{light-blue}{rgb}{0.34, 0.47, 1}
 
 \renewcommand\maketitlehooka{\null\mbox{}\vfill}
 \renewcommand\maketitlehookd{\vfill\null}
@@ -261,6 +266,8 @@ emulated computer. The following will be said: the result is stored in register 
 			\verb|0o| & Any number prepended with \verb|0o| is encoded in octal \\
 			\hline
 			\verb|0b| & Any number prepended with \verb|0b| is encoded in binary \\
+			\hline
+			\verb|@| & Any number prepended with \verb|@| denotes a memory address in hexadecimal \\
 			\hline
 		\end{tabular}
 	}
@@ -594,23 +601,30 @@ LOIP:
 
 \pagebreak
 \section{Tests}
-\subsection{Individual instructions}
+\subsection{Individual einstructions}
 The purpose of these tests is to validate the implementation of each indivual einstruction.
 Specifically, each einstruction test checks both its behaviour during execution (einstruction
-produces the expected result) and that the eflags are updated as expected. Refer to Table
-\ref{table:h9kinstructions} for a detailed overview of expected behaviour for each einstruction.
+produces the expected result) and that the eflags are updated as expected. This test has been done
+for all einstructions. Refer to Table \ref{table:h9kinstructions} for a detailed overview of
+expected behaviour for each einstruction.
 
-\textbf{Example test} \\
-The following test is really simple. It first performs the operation $-50 - (-100)$ and stores the
-result into $\mathbf{T0}$ and then performs the operation $0 - 0$ and stores the result in
-$\mathbf{T1}$. The first $\mathbf{ESUB}$ einstruction is used to check that the order of the
+\textbf{Example test (ESUB)} \\
+The following test code (displayed in Listing \ref{code:h9ktestsub}) is used to
+showcase the individual einstruction test procedure.
+
+It first performs the operation $-50 - (-100)$ and stores the
+result into $\mathbf{ET0}$ and then performs the operation $0 - 0$ and stores the result in
+$\mathbf{ET1}$. The first $\mathbf{ESUB}$ einstruction is used to check that the order of the
 subtract operation is perfomed as expected: second operand - first operand. The second
-$\mathbf{ESUB}$ einstruction is used to check the special case of $0 - 0$ whose result should
-obviously be 0 and the zero eflag from $\mathbf{ESR}$ should be set to 1 and, not so obviously, the
-carry eflag from $\mathbf{ESR}$ should also equal 1.\footnote{This is due to the fact that the H9K
-	uses two's complement to represent negative values and that, when subtracting, the actual 
-	arithmetic operation is $0 + (\bar{0} + 1)$}
-\begin{lstlisting}[style=customasm, caption={HAL9000 SUB test code}, label={code:h9ktestsub}]
+$\mathbf{ESUB}$ einstruction is used to check the special case of $0 - 0$, which obviously, its
+result should be 0 and, consequently, the $\mathbf{Z}$ eflag from $\mathbf{ESR}$ should be set to 1 but, not so obviously, the
+$\mathbf{C}$ eflag from $\mathbf{ESR}$ should also equal 1. This is due to the fact that the H9K uses two's
+complement to represent negative values and that, when subtracting, the actual arithmetic operation
+perfomed is $0 + (\bar{0} + 1)$.
+
+\noindent
+\begin{minipage}{.40\textwidth}
+	\begin{lstlisting}[style=customasm, caption={HAL9000 SUB test code}, label={code:h9ktestsub}]
 SET #-100, X2
 SET #-50, X3
 SET #0, X4
@@ -618,13 +632,170 @@ SET #0, X5
 SUB X2, X3, T0
 SUB X4, X5, T1
 EXIT
-\end{lstlisting}
-After the execution of the eprogram the value stored in $\mathbf{T0}$ is \verb|0x0032| which is 50 in
-decimal. The value stored in $\mathbf{T1}$ is \verb|0x0000| which is 0 in decimal and the value of
-$\mathbf{ESR}$ is \verb|0x0005| or \verb|0b0000000000000101|. Which means that both carry and zero
-eflags are set to 1.
-\vfill
+	\end{lstlisting}
+\end{minipage}
+\hfill
+\begin{minipage}{.55\textwidth}
+	\begin{lstlisting}[style=customasm, caption={HAL9000 assembled SUB test code}, label={code:h9ktestsubasm}]
+@0000   1110010011100010 e4e2
+@0001   1110011001110011 e673
+@0002   1110000000000100 e004
+@0003   1110000000000101 e005
+@0004   1101001000110000 d230
+@0005   1101010001010001 d451
+@0006   1000000000000000 8000
+	\end{lstlisting}
+\end{minipage}
 
+After the execution of the eprogram $\mathbf{ET0}$ should equal \verb|0x0032|, which is 50 in
+decimal, $\mathbf{ET1}$ should equal \verb|0x0000|, which is 0 in decimal and
+$\mathbf{ESR}$ should equal \verb|0x0005| or \verb|0b0000000000000101|. Which means that both $\mathbf{C}$ and
+$\mathbf{Z}$ eflags are set to 1.
+
+Listing \ref{code:h9ksubmem} shows the memory view of the emulator after the execution of the
+eprogram with $\mathbf{ET0}$ highlighted in red, $\mathbf{ET1}$ in green and $\mathbf{ESR}$ in blue.
+\begin{lstlisting}[style=customasm, caption={HAL9000 ESUB test code memory view}, label={code:h9ksubmem}, escapechar=!]
+@00001000: E4 E2 E6 73 E0 04 E0 05 D2 30 D4 51 80 00 80 00
+@00001010: 00 07 !\colorbox{light-red}{00 32}! !\colorbox{light-green}{00 00}! FF 9C FF CE 00 00 00 00 00 00
+@00001020: 00 00 !\colorbox{light-blue}{00 05}!
+\end{lstlisting}
+
+\subsection{Custom code: division implementation}
+An implementation of the division arithmetic operation has been accomplished using the Euclidean
+Division Algorithm. This has been done in order to test the execution of an algorithm which involves
+multiple einstructions, efalgs updates and conditional jumps. Implementation is displayed on Listing \ref{code:h9kdivimpl}.
+
+\noindent
+\begin{minipage}{.40\textwidth}
+	\begin{lstlisting}[style=customasm, caption={HAL9000 division code}, label={code:h9kdivimpl}]
+LOA 12, T0
+LOA 13, T1
+COPY T0, X2
+SET 0, X3
+SUB X2, T1, X4
+GOZ 8
+GON 8
+GOI 11
+SUB T1, X2, X2
+ADQ 1, X3
+GOI 4
+EXIT
+123
+7
+	\end{lstlisting}
+\end{minipage}
+\hfill
+\begin{minipage}{.55\textwidth}
+	\begin{lstlisting}[style=customasm, caption={HAL9000 assembled division code},
+		label={code:h9kdivimlpasm}]
+@0000   0000000000011000 0018
+@0001   0000000000011011 001b
+@0002   1100000000000010 c002
+@0003   1110000000000011 e003
+@0004   1101001000010100 d214
+@0005   0101000000010000 5010
+@0006   0110000000010000 6010
+@0007   0100000000010110 4016
+@0008   1101000100100010 d122
+@0009   1110100000001011 e80b
+@0010   0100000000001000 4008
+@0011   1000000000000000 8000
+@0012   0000000000001010 007b
+@0013   0000000000000011 0007
+	\end{lstlisting}
+\end{minipage}
+
+After the execution of the eprogram, $\mathbf{EX2}$ holds the residue of the division, which should
+be 4, and $\mathbf{EX3}$ holds the quotient of the division, which should be 17. Listing
+\ref{code:h9kdivmem} displays the memory view of the emulator after the execution of the eprogram
+with $\mathbf{EX2}$ highlighted in red and $\mathbf{EX3}$ highlighted in green.
+\begin{lstlisting}[style=customasm, caption={HAL9000 division code memory view}, label={code:h9kdivmem}, escapechar=!]
+00001000: 00 18 00 1B C0 02 E0 03 D2 14 50 10 60 10 40 16
+00001010: D1 22 E8 0B 40 08 80 00 00 7B 00 07 80 00 00 0C
+00001020: 00 7B 00 07 !\colorbox{light-red}{00 04}! !\colorbox{light-green}{00 11}! 00 03 00 00 00 00 00 00
+00001030: 00 04 42
+\end{lstlisting}
+
+\subsection{Assignment eprogram}
+The eprogram provided on the assignment (displayed on Listing \ref{code:h9kT1}) has been tested to verify the
+correct execution of the emulator.
+
+\noindent
+\begin{minipage}{.40\textwidth}
+	\begin{lstlisting}[style=customasm, caption={HAL9000 assignment code}, label={code:h9kT1}]
+SET 16, X2
+SET 19, X3
+SET 22, X4
+SET 3, X5
+LOIP (X2), T0
+COPY T0, X6
+LOIP (X3), T1
+COPY T1, X7
+LSH 1, X6, 0
+LSH 1, X7, 0
+ADD X6, X7, T0
+STIP T0, (X4)
+ADQ -1, X5
+GOZ 15
+GOI 4
+EXIT
+1
+1
+1
+1
+1
+1
+0
+0
+0
+	\end{lstlisting}
+\end{minipage}
+\hfill
+\begin{minipage}{.55\textwidth}
+	\begin{lstlisting}[style=customasm, caption={HAL9000 assembled assignment code}, label={code:h9kT1asm}]
+@0000   1110000010000010 e082
+@0001   1110000010011011 e09b
+@0002   1110000010110100 e0b4
+@0003   1110000000011101 e01d
+@0004   0010000000100000 2020
+@0005   1100000000000110 c006
+@0006   0010000000110001 2031
+@0007   1100000000010111 c017
+@0008   1111000101100000 f160
+@0009   1111000101110000 f170
+@0010   1100111001110000 ce70
+@0011   0011000001000000 3040
+@0012   1110111111111101 effd
+@0013   0101000000011110 501e
+@0014   0100000000001000 4008
+@0015   1000000000000000 8000
+@0016   0000000000000001 0001
+@0017   0000000000000001 0001
+@0018   0000000000000001 0001
+@0019   0000000000000001 0001
+@0020   0000000000000001 0001
+@0021   0000000000000001 0001
+@0022   0000000000000000 0000
+@0023   0000000000000000 0000
+@0024   0000000000000000 0000
+	\end{lstlisting}
+\end{minipage}
+
+The eprogram iterates through two three-element vectors (found at eaddresses \verb|@0016| and
+\verb|@0019|), multiplies each element by 2, adds both vectors together and stores the result in an
+other three-element vector (found at eaddress \verb|@0022|). After the execution of the eprogram
+the result vector should equal [\verb|0x0004|, \verb|0x004|, \verb|0x0004|].
+
+Listing \ref{code:h9kT1mem} shows the memory view of the emulator after the execution of the
+eprogram with the result vector highlighted in red.
+\begin{lstlisting}[style=customasm, caption={HAL9000 assignment code memory view}, label={code:h9kT1mem}, escapechar=!]
+@00001000: E0 82 E0 9B E0 B4 E0 1D 20 20 C0 06 20 31 C0 17
+@00001010: F1 60 F1 70 CE 70 30 40 EF FD 50 1E 40 08 80 00
+@00001020: 00 01 00 01 00 01 00 01 00 01 00 01 !\colorbox{light-red}{00 04 00 04}!
+@00001030: !\colorbox{light-red}{00 04}!
+\end{lstlisting}
+
+\vfill
 \pagebreak
 \appendix
 \begin{appendices}
@@ -636,6 +807,8 @@ eflags are set to 1.
 	\underline{\href{https://github.com/serafi-nebot-uib/hal9000-assembler}{serafi-nebot-uib/hal9000-assembler}}\footnote{Full
 	link:
 	\href{https://github.com/serafi-nebot-uib/hal9000-assembler}{https://github.com/serafi-nebot-uib/hal9000-assembler}}.
+	This tool has proved to be extremely useful for the development of this assignment, as it has
+	sped up the test iteration process.
 
 	\textbf{Example demonstration} \\
 	With the code on Listing \ref{code:h9kasmdiv}, the HAL9000 Assembler will produce the output on Listing
