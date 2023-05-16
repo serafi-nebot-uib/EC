@@ -17,6 +17,8 @@
 \usepackage{framed}
 \usepackage[page,toc,titletoc,title]{appendix}
 \usepackage{enumitem}
+\usepackage{caption}
+
 \renewcommand\maketitlehooka{\null\mbox{}\vfill}
 \renewcommand\maketitlehookd{\vfill\null}
 
@@ -57,142 +59,187 @@
 
 \pagebreak
 \section{Introduction}
-This assignment consists of developing and emulator for the HAL9000 computer on the Motorola 68000
-using assembly language.
+This assignment consists of developing an emulator for the HAL9000 computer on the Motorola 68000
+using assembly language. Therefore, HAL9000 may be refered to as the guest computer, and the
+Motorola 68000 as the host computer.
 
 \textbf{What is an emulator?} \\
 An emulator allows a computer system to run software designed for a completely different computer
-system. This can be performed by mimicking the execution of each individual instruction from the
-emulated computer on the host computer. Execution of a single emulated instruction usually
-implicates the execution of many host instructions. Hence, the emulated software will, typically,
-run slower on the emulated computer than on the original computer.
+system. This can be achieved by \emph{imitating} the execution of each individual instruction from the
+guest computer on the host computer. But this imitation comes at a cost, execution of a single
+emulated instruction usually implicates the execution of many host instructions. Consequently, the emulated
+software will, typically, run slower on the emulated computer than on the original computer.
 
 \textbf{HAL9000} \\
 The HAL9000 (\textbf{H}euristically programmed \textbf{AL}gorithmic computer) has the following
 registers:
-\begin{itemize}
-	\item \verb|T0| and \verb|T1|, which are used to interface the memory and in some ALU
-		operations.
-	\item \verb|X2|, \verb|X3|, \verb|X4|, \verb|X5|, \verb|X6| and \verb|X7|, which are general
-		purpose registers and can be used in all ALU operations.
-\end{itemize}
-All registers, memory words and instructions are 16 bits long. So it is a 16 bit computer. This is
-the instruction set:
-\begin{table}[h]
+\begin{table}[ht]
 	\centering
 	{
 		\fontfamily{lmtt}
 		\selectfont
-		\begin{tabular}{ | l | l | l | l | l |}
+		\begin{tabular}{ | l | l | }
 			\hline
-			\textbf{ID} & \textbf{Instruction} & \textbf{Encoding}  & \textbf{Action} & \textbf{Flags}\\
+			\textbf{Register} & \textbf{Usage} \\
 			\hline
-			0 & LOA M, Ti & 0000xxxmmmmmmmmi &
-					\begin{tabular}[t]{ l }
-						Ti $\leftarrow$ [M]
-					\end{tabular}
-					& N, Z \\
+			PC & Holds the address of the next instruction to execute \\
 			\hline
-			1 & STO Ti, M & 0001xxxmmmmmmmmi &
-					\begin{tabular}[t]{ l }
-						M $\leftarrow$ [Ti]
-					\end{tabular}
-					& \\
+			IR & Holds the current instruction to execute \\
 			\hline
-			2 & LOIP (Xb), Ti & 0010xxxxxbbbxxxi &
-					\begin{tabular}[t]{ l }
-						Ti $\leftarrow$ [[Xb]] \\
-						Xb $\leftarrow$ [Xb] + 1
-					\end{tabular}
-					& N, Z \\
+			T0 & Interface memory and some ALU operations \\
 			\hline
-			3 & STIP Ti, (Xb) & 0011xxxxxbbbxxxi &
-					\begin{tabular}[t]{ l }
-						[Xb] $\leftarrow$ [Ti] \\
-						Xb $\leftarrow$ [Xb] + 1
-					\end{tabular}
-					& \\
+			T1 & Interface memory and some ALU operations \\
 			\hline
-			4 & GOI M & 0100xxxmmmmmmmmx &
-					\begin{tabular}[t]{ l }
-						PC $\leftarrow$ M
-					\end{tabular}
-					& \\
+			X2 & General purpose and ALU operations \\
 			\hline
-			5 & GOZ M & 0101xxxmmmmmmmmx &
-					\begin{tabular}[t]{ l }
-						if Z = 1 then PC $\leftarrow$ M
-					\end{tabular}
-					& \\
+			X3 & General purpose and ALU operations \\
 			\hline
-			6 & GON M & 0110xxxmmmmmmmmx &
-					\begin{tabular}[t]{ l }
-						if N = 1 then PC $\leftarrow$ M
-					\end{tabular}
-					& \\
+			X4 & General purpose and ALU operations \\
 			\hline
-			7 & EXIT & 10xxxxxxxxxxxxxx &
-					\begin{tabular}[t]{ l }
-						Stop execution
-					\end{tabular}
-					& \\
+			X5 & General purpose and ALU operations \\
 			\hline
-			8 & COPY Rb, R & 11000xxxxbbbxccc &
-					\begin{tabular}[t]{ l }
-						Rc $\leftarrow$ [Rb]
-					\end{tabular}
-					& N, Z \\
+			X6 & General purpose and ALU operations \\
 			\hline
-			9 & ADD Ra, Rb, R & 11001aaaxbbbxccc &
-					\begin{tabular}[t]{ l }
-						Rc $\leftarrow$ [Rb] + [Ra]
-					\end{tabular}
-					& C, N, Z \\
-			\hline
-			10 & SUB Ra, Rb, Rc & 11010aaaxbbbxccc &
-					\begin{tabular}[t]{ l }
-						Rc $\leftarrow$ [Rb] - [Ra]
-					\end{tabular}
-					& C, N, Z \\
-			\hline
-			11 & AND Ra, Rb, Rc & 11011aaaxbbbxccc &
-					\begin{tabular}[t]{ l }
-						Rc $\leftarrow$ [Rb] $\land$ [Ra]
-					\end{tabular}
-					& N, Z \\
-			\hline
-			12 & SET \#k, Rc & 11100kkkkkkkkccc &
-					\begin{tabular}[t]{ l }
-						Rc $\leftarrow$ k
-					\end{tabular}
-					& N, Z \\
-			\hline
-			13 & ADQ \#k, Rc & 11101kkkkkkkkccc &
-					\begin{tabular}[t]{ l }
-						Rc $\leftarrow$ [Rc] + k
-					\end{tabular}
-					& C, N, Z \\
-			\hline
-			14 & LSH \#p, Rb, \#n & 11110pppxbbbxxxn &
-					\begin{tabular}[t]{ l }
-						if n = 0 then Rb $\leftarrow$ [Rb] \verb|<<| p \\
-								else Rb $\leftarrow$ [Rb] \verb|>>| p
-					\end{tabular}
-					& C, N, Z \\
+			X7 & General purpose and ALU operations \\
 			\hline
 		\end{tabular}
 	}
-	\label{table:h9kinstructions}
-	\caption{HAL9000 instruction set}
+	\caption{HAL9000 registers}
+	\label{table:h9kregisters}
 \end{table}
 
-From this point onwards, in order to distinguish between the emulated computer (HAL9000) and the
-host machine (Motorola 68000), anything refering to the emulated computer will be prepended with an
-"e" (e from emulated). For example, instead of saying: the result is stored in register $\mathbf{X2}$ of the
-emulated computer. The following will be said: the result is stored in register $\mathbf{EX2}$.
+All registers, memory words and instructions are 16 bits long. In consequence, HAL9000 is a 16 bit
+computer. Negative values are represented in two's complement form.
 
-Likewise, some acronyms, jargon and formats are used in order to simplify explanations:
-\begin{table}[h]
+The HAL9000 instructions set is listed in the following table:
+\begin{table}[ht]
+	\centering
+	{
+		\fontfamily{lmtt}
+		\selectfont
+		\begin{threeparttable}
+			\begin{tabular}{ | l | l | l | l | l | }
+				\hline
+				\textbf{ID} & \textbf{Instruction} & \textbf{Encoding}  & \textbf{Action} & \textbf{Flags}\\
+				\hline
+				0 & LOA M, Ti & 0000xxxmmmmmmmmi &
+						\begin{tabular}[t]{ l }
+							Ti $\leftarrow$ [M]
+						\end{tabular}
+						& N, Z \\
+				\hline
+				1 & STO Ti, M & 0001xxxmmmmmmmmi &
+						\begin{tabular}[t]{ l }
+							M $\leftarrow$ [Ti]
+						\end{tabular}
+						& \\
+				\hline
+				2 & LOIP (Xb), Ti & 0010xxxxxbbbxxxi &
+						\begin{tabular}[t]{ l }
+							Ti $\leftarrow$ [[Xb]] \\
+							Xb $\leftarrow$ [Xb] + 1
+						\end{tabular}
+						& N, Z \\
+				\hline
+				3 & STIP Ti, (Xb) & 0011xxxxxbbbxxxi &
+						\begin{tabular}[t]{ l }
+							[Xb] $\leftarrow$ [Ti] \\
+							Xb $\leftarrow$ [Xb] + 1
+						\end{tabular}
+						& \\
+				\hline
+				4 & GOI M & 0100xxxmmmmmmmmx &
+						\begin{tabular}[t]{ l }
+							PC $\leftarrow$ M
+						\end{tabular}
+						& \\
+				\hline
+				5 & GOZ M & 0101xxxmmmmmmmmx &
+						\begin{tabular}[t]{ l }
+							if Z = 1 then PC $\leftarrow$ M
+						\end{tabular}
+						& \\
+				\hline
+				6 & GON M & 0110xxxmmmmmmmmx &
+						\begin{tabular}[t]{ l }
+							if N = 1 then PC $\leftarrow$ M
+						\end{tabular}
+						& \\
+				\hline
+				7 & EXIT & 10xxxxxxxxxxxxxx &
+						\begin{tabular}[t]{ l }
+							Stop execution
+						\end{tabular}
+						& \\
+				\hline
+				8 & COPY Rb, R & 11000xxxxbbbxccc &
+						\begin{tabular}[t]{ l }
+							Rc $\leftarrow$ [Rb]
+						\end{tabular}
+						& N, Z \\
+				\hline
+				9 & ADD Ra, Rb, R & 11001aaaxbbbxccc &
+						\begin{tabular}[t]{ l }
+							Rc $\leftarrow$ [Rb] + [Ra]
+						\end{tabular}
+						& C, N, Z \\
+				\hline
+				10 & SUB Ra, Rb, Rc & 11010aaaxbbbxccc &
+						\begin{tabular}[t]{ l }
+							Rc $\leftarrow$ [Rb] - [Ra]
+						\end{tabular}
+						& C, N, Z \\
+				\hline
+				11 & AND Ra, Rb, Rc & 11011aaaxbbbxccc &
+						\begin{tabular}[t]{ l }
+							Rc $\leftarrow$ [Rb] $\land$ [Ra]
+						\end{tabular}
+						& N, Z \\
+				\hline
+				12 & SET \#k, Rc & 11100kkkkkkkkccc &
+						\begin{tabular}[t]{ l }
+							Rc $\leftarrow$ k
+						\end{tabular}
+						& N, Z \\
+				\hline
+				13 & ADQ \#k, Rc & 11101kkkkkkkkccc &
+						\begin{tabular}[t]{ l }
+							Rc $\leftarrow$ [Rc] + k
+						\end{tabular}
+						& C, N, Z \\
+				\hline
+				14 & LSH \#p, Rb, \#n & 11110pppxbbbxxxn &
+						\begin{tabular}[t]{ l }
+							if n = 0 then Rb $\leftarrow$ [Rb] \verb|<<| p \\
+									else Rb $\leftarrow$ [Rb] \verb|>>| p
+						\end{tabular}
+						& C, N, Z \\
+				\hline
+			\end{tabular}
+			\begin{tablenotes}
+				\small
+				\item[1] Flags column indicates which flags are updated.
+				\item[2] k constants must be sign extended
+				\item[3] SUB instruction performs the operation: $Rb + (\overline{Ra} + 1)$
+			\end{tablenotes}
+		\end{threeparttable}
+	}
+	\caption{HAL9000 instruction set}
+	\label{table:h9kinstructions}
+\end{table}
+
+
+HAL9000 uses two's complement to represent negative values.
+
+\textbf{Acronyms, jargon and formats} \\
+From this point onwards, the acronyms, jargon and formats, listed in Table \ref{table:jargon}, are
+used to simplify explanations.
+
+Likewise, in order to distinguish between the emulated computer (HAL9000) and the
+host machine (Motorola 68000), anything refering to the emulated computer will be prepended with an
+"e" (e for emulated). For example, instead of saying: the result is stored in register $\mathbf{X2}$ of the
+emulated computer. The following will be said: the result is stored in register $\mathbf{EX2}$.
+\begin{table}[ht]
 	\centering
 	{
 		\fontfamily{lmtt}
@@ -201,9 +248,9 @@ Likewise, some acronyms, jargon and formats are used in order to simplify explan
 			\hline
 			\textbf{Word/Format} & \textbf{Meaning} \\
 			\hline
-			MSb/MSB/MSW & Most Singificant bit/Byte/Word (whose address is highest) \\
+			MSb/MSB/MSW & Most Singificant bit/Byte/Word (lowest address) \\
 			\hline
-			LSb/LSB/LSW & Least Singificant bit/Byte/Word (whose address is lowest)  \\
+			LSb/LSB/LSW & Least Singificant bit/Byte/Word (highest address) \\
 			\hline
 			H9K & HAL9000 \\
 			\hline
@@ -217,8 +264,8 @@ Likewise, some acronyms, jargon and formats are used in order to simplify explan
 			\hline
 		\end{tabular}
 	}
-	\label{table:jargon}
 	\caption{Acronyms, jargon and formats}
+	\label{table:jargon}
 \end{table}
 
 
@@ -226,9 +273,6 @@ Likewise, some acronyms, jargon and formats are used in order to simplify explan
 \section{Reference tables}
 
 \subsection{Subroutines}
-Input and Output columns indicate the subroutine's stack layout before and after its execution. Each
-item occupies 1 word (16 bits) and the first item is the value pointed by the \emph{Stack Pointer}
-($\mathbf{SP}$).
 \begin{table}[h!]
 	\centering
 	{
@@ -272,12 +316,13 @@ item occupies 1 word (16 bits) and the first item is the value pointed by the \e
 			\end{tabular}
 			\begin{tablenotes}
 				\small
-				\item 
+				\item[1] Input and Output columns indicate the subroutine's stack layout before and
+					after its execution. Each row occupies 16 bits and the first is the one pointed by the \emph{Stack Pointer} ($\mathbf{SP}$).
 			\end{tablenotes}
 		\end{threeparttable}
 	}
-	\label{table:subroutines}
 	\caption{Subroutines}
+	\label{table:subroutines}
 \end{table}
 
 \subsection{Commonly used registers}
@@ -304,13 +349,13 @@ item occupies 1 word (16 bits) and the first item is the value pointed by the \e
 			\hline
 		\end{tabular}
 	}
-	\label{table:registers}
 	\caption{Commonly used registers}
+	\label{table:registers}
 \end{table}
 
 \pagebreak
 \section{Fetch phase}
-The fetch phase of the H9K is fairly simple. It can be best described by the following
+The fetch phase of the H9K is fairly simple and can be described by the following
 precedure:
 \begin{enumerate}
 	\item Load 16 bits from ememory pointed by $\mathbf{EPC}$ into $\mathbf{EIR}$
@@ -318,7 +363,7 @@ precedure:
 \end{enumerate}
 We have to take into account the fact that each memory cell of the H9K, unlike the M68K , holds 16
 bits, instead of 8. This is why the $\mathbf{EPC}$ register is incremented by 1
-instead of 2. Therefore, in order to load the instructions from ememory directly, the value of
+instead of 2. Therefore, in order to load the instruction from ememory directly, the value of
 $\mathbf{EPC}$ has to be multiplied by 2 ($16 / 8 = 2$).
 
 So, the updated version of the previous procedure is:
@@ -551,8 +596,8 @@ LOIP:
 \section{Tests}
 \subsection{Individual instructions}
 The purpose of these tests is to validate the implementation of each indivual einstruction.
-Specifically, each einstruction test check both its behaviour during execution (einstruction
-produces the expected result) and that the eflags are updated as correctly. Refer to Table
+Specifically, each einstruction test checks both its behaviour during execution (einstruction
+produces the expected result) and that the eflags are updated as expected. Refer to Table
 \ref{table:h9kinstructions} for a detailed overview of expected behaviour for each einstruction.
 
 \textbf{Example test} \\
@@ -561,10 +606,10 @@ result into $\mathbf{T0}$ and then performs the operation $0 - 0$ and stores the
 $\mathbf{T1}$. The first $\mathbf{ESUB}$ einstruction is used to check that the order of the
 subtract operation is perfomed as expected: second operand - first operand. The second
 $\mathbf{ESUB}$ einstruction is used to check the special case of $0 - 0$ whose result should
-obviously be 0 the zero eflag from $\mathbf{ESR}$ should be set to 1 and, not so obviously, the
+obviously be 0 and the zero eflag from $\mathbf{ESR}$ should be set to 1 and, not so obviously, the
 carry eflag from $\mathbf{ESR}$ should also equal 1.\footnote{This is due to the fact that the H9K
-	uses two's complement to represent negative values and that, when subtracting, the performed 
-	arithmetic operation is $0 - (\bar{0} + 1)$}
+	uses two's complement to represent negative values and that, when subtracting, the actual 
+	arithmetic operation is $0 + (\bar{0} + 1)$}
 \begin{lstlisting}[style=customasm, caption={HAL9000 SUB test code}, label={code:h9ktestsub}]
 SET #-100, X2
 SET #-50, X3
@@ -583,7 +628,69 @@ eflags are set to 1.
 \pagebreak
 \appendix
 \begin{appendices}
-	\section{HAL9000 Compiler}
+	\section{HAL9000 Assembler}
+	When working on multiple assembly programs for the HAL9000 machine, assembling by hand
+	becomes tedious and error prone, which results in the slow the development of the actual HAL9000
+	emulator. For this reason, a very simple HAL9000 assembler has been implemented in Python3,
+	available at the GitHub repository:
+	\underline{\href{https://github.com/serafi-nebot-uib/hal9000-assembler}{serafi-nebot-uib/hal9000-assembler}}\footnote{Full
+	link:
+	\href{https://github.com/serafi-nebot-uib/hal9000-assembler}{https://github.com/serafi-nebot-uib/hal9000-assembler}}.
+
+	\textbf{Example demonstration} \\
+	With the code on Listing \ref{code:h9kasmdiv}, the HAL9000 Assembler will produce the output on Listing
+	\ref{code:h9kasmdivasm}.
+
+	\noindent
+	\begin{minipage}{.40\textwidth}
+		\begin{lstlisting}[style=customasm, caption={HAL9000 division implementation}, label={code:h9kasmdiv}]
+LOA 12, T0
+LOA 13, T1
+COPY T0, X2
+SET 0, X3
+SUB X2, T1, X4
+GOZ 8
+GON 8
+GOI 11
+SUB T1, X2, X2
+ADQ 1, X3
+GOI 4
+EXIT
+10
+3
+		\end{lstlisting}
+	\end{minipage}
+	\hfill
+	\begin{minipage}{.55\textwidth}
+		\begin{lstlisting}[style=customasm, caption={HAL9000 assmebled division implementation}, label={code:h9kasmdivasm}]
+@0000   0000000000011000 0018 LOA 12, T0
+@0001   0000000000011011 001b LOA 13, T1
+@0002   1100000000000010 c002 COPY T0, X2
+@0003   1110000000000011 e003 SET 0, X3
+@0004   1101001000010100 d214 SUB X2, T1, X4
+@0005   0101000000010000 5010 GOZ 8
+@0006   0110000000010000 6010 GON 8
+@0007   0100000000010110 4016 GOI 11
+@0008   1101000100100010 d122 SUB T1, X2, X2
+@0009   1110100000001011 e80b ADQ 1, X3
+@0010   0100000000001000 4008 GOI 4
+@0011   1000000000000000 8000 EXIT
+@0012   0000000000001010 000a 10
+@0013   0000000000000011 0003 3
+		\end{lstlisting}
+	\end{minipage}
+
+	The output can be formatted to only output certain information like the binary, hexadecimal
+	represesentation of the instruction. Moreover, with the \verb|--format-m68k| option, the HAL9000
+	program on Listing \ref{code:h9kasmdiv} can be transformed directly to Motorola 68000 assembly
+	code for the developed emulator (displayed on Listing \ref{code:h9kasmdivm68kfmt}).
+	\begin{lstlisting}[style=customasm, caption={HAL9000 assmebled with M68K format}, label={code:h9kasmdivm68kfmt}]
+	DC.W $0018,$001B,$C002,$E003,$D214,$5010,$6010,$4016
+	DC.W $D122,$E80B,$4008,$8000,$000A,$0003
+	\end{lstlisting}
+
+	\vfill
+	\pagebreak
 	\section{HAL9000 Emulator Code}
 	\begin{lstlisting}[style=customasm, caption={HAL9000 emulator code}, label={code:h9kemulator}]
 *-----------------------------------------------------------
