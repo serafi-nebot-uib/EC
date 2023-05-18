@@ -64,18 +64,21 @@
 
 \pagebreak
 \section{Introduction}
-This assignment consists of developing an emulator for the HAL9000 computer on the Motorola 68000
-using assembly language. Therefore, HAL9000 may be refered to as the guest computer, and the
-Motorola 68000 as the host computer.
+This assignment consists of developing an emulator for the HAL9000 computer (guest) on the Motorola
+68000 (host) using assembly language. The guest program, registers and memory are contained within
+the emulator's memory. The emulator's life cycle is divided into three phases:
+fetch, where the next guest computer instruction to execute is retrieved from guest program memory,
+decode, where the guest computer instruction to execute is identified and execution, where the
+behaviour of the guest computer instruction to execute is emulated on the host computer.
 
-\textbf{What is an emulator?} \\
+\subsection{What is an emulator?}
 An emulator allows a computer system to run software designed for a completely different computer
 system. This can be achieved by \emph{imitating} the execution of each individual instruction from the
 guest computer on the host computer. But this imitation comes at a cost, execution of a single
 emulated instruction usually implicates the execution of many host instructions. Consequently, the emulated
 software will, typically, run slower on the emulated computer than on the original computer.
 
-\textbf{HAL9000} \\
+\subsection{HAL9000}
 The HAL9000 (\textbf{H}euristically programmed \textbf{AL}gorithmic computer) has the following
 registers:
 \begin{table}[ht]
@@ -114,10 +117,9 @@ registers:
 \end{table}
 
 All registers, memory words and instructions are 16 bits long. In consequence, HAL9000 is a 16 bit
-computer. Negative values are represented in two's complement form.
-
-The HAL9000 instructions set is listed in the following table:
-\begin{table}[ht]
+computer. Two's complement is used to represent negative values. The HAL9000 instruction set is
+listed in Table \ref{table:h9kinstructions}.
+\begin{table}[!htb]
 	\centering
 	{
 		\fontfamily{lmtt}
@@ -233,11 +235,9 @@ The HAL9000 instructions set is listed in the following table:
 	\label{table:h9kinstructions}
 \end{table}
 
-
-HAL9000 uses two's complement to represent negative values.
-
-\textbf{Acronyms, jargon and formats} \\
-From this point onwards, the acronyms, jargon and formats, listed in Table \ref{table:jargon}, are
+\pagebreak
+\subsection{Acronyms and formats}
+From this point onwards, the acronyms and formats listed in Table \ref{table:acronyms}, are
 used to simplify explanations.
 
 Likewise, in order to distinguish between the emulated computer (HAL9000) and the
@@ -271,8 +271,8 @@ emulated computer. The following will be said: the result is stored in register 
 			\hline
 		\end{tabular}
 	}
-	\caption{Acronyms, jargon and formats}
-	\label{table:jargon}
+	\caption{Acronyms and formats}
+	\label{table:acronyms}
 \end{table}
 
 
@@ -797,9 +797,28 @@ eprogram with the result vector highlighted in red.
 
 \vfill
 \pagebreak
+\section{Conclusion}
+The development of an emulator requires a lot of attention to detail. It is extremely easy to make
+a mistake. For this reason, I think this assignment is a really great way to take most of the
+knowledge learned throughout the semester, put it all together and test. Moreover, it has provided me
+with a deeper knowledge about how elemental machines work and a better understanding of the Motorola
+68000 assembly and its restrictions.
+
+In the development of any program, it is of great importance to identify patterns as it can greatly
+improve its performance and readability. But, even though the decode algorithm has been implemented
+in this manner, a very efficient way, not using a Binary Decision Tree might have been a missed
+opportunity to explore a more complex and generic approach to solve the problem.
+
+Additionally, I have had the opportunity to solve some of the inconveniences I have encountered
+with knowledge and skills, mostly unrelated to this subject, I have learned over the years like the development of the
+HAL9000 Assembler (explained on Appendix \ref{appendix:h9kasm}) to help alleviate the cognitive load of
+writing and assembling HAL9000 programs and facilitate the testing process.
+
+\pagebreak
 \appendix
 \begin{appendices}
 	\section{HAL9000 Assembler}
+	\label{appendix:h9kasm}
 	When working on multiple assembly programs for the HAL9000 machine, assembling by hand
 	becomes tedious and error prone, which results in the slow the development of the actual HAL9000
 	emulator. For this reason, a very simple HAL9000 assembler has been implemented in Python3,
@@ -873,10 +892,10 @@ EXIT
 * Description: Emulador de la HAL9000
 *-----------------------------------------------------------
 	ORG $1000
-EMEM:	DC.W $E082,$E09B,$E0B4,$E01D,$2020,$C006,$2031,$C017
-	DC.W $F160,$F170,$CE70,$3040,$EFFD,$501E,$4008,$8000
-	DC.W $0001,$0001,$0001,$0001,$0001,$0001,$0000,$0000
-	DC.W $0000
+EMEM:	
+	DC.W $E082,$E09B,$E0B4,$E01D,$2020,$C006,$2031,$C017,$F160
+	DC.W $F170,$CE70,$3040,$EFFD,$501E,$4008,$8000,$0001
+	DC.W $0001,$0001,$0001,$0001,$0001,$0000,$0000,$0000
 EIR:	DC.W 0 ;eregistro de instruccion
 EPC:	DC.W 0 ;econtador de programa
 ET0:	DC.W 0 ;eregistro T0
@@ -952,7 +971,8 @@ JMPLIST:
 	; NOTE on the following list of EINSTRUCTIONS implementations
 	;   - RGET and RSET subroutines are used to get or set eregisters
 	;   - EMEM is accessed with indexed mode
-	;       (indexes are multiplied by 2 as each ememory cell contains 2 Bytes)
+	;       (indexes are multiplied by 2 as each ememory cell contains 2
+	;        Bytes)
 	;   - AND instruction is used in instead of BTST as the former allows
 	;       all possible sizes and the latter only allows byte and longword
 	;   - FLAGS subroutine is used to update specific flags

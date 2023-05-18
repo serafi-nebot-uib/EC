@@ -6,12 +6,9 @@
 *-----------------------------------------------------------
 	ORG $1000
 EMEM:	
-	DC.W $0018,$001B,$C002,$E003,$D214,$5010,$6010,$4016
-	DC.W $D122,$E80B,$4008,$8000,$007B,$0007
-	; DC.W $E082,$E09B,$E0B4,$E01D,$2020,$C006,$2031,$C017
-	; DC.W $F160,$F170,$CE70,$3040,$EFFD,$501E,$4008,$8000
-	; DC.W $0001,$0001,$0001,$0001,$0001,$0001,$0000,$0000
-	; DC.W $0000
+	DC.W $E082,$E09B,$E0B4,$E01D,$2020,$C006,$2031,$C017,$F160
+	DC.W $F170,$CE70,$3040,$EFFD,$501E,$4008,$8000,$0001
+	DC.W $0001,$0001,$0001,$0001,$0001,$0000,$0000,$0000
 EIR:	DC.W 0 ;eregistro de instruccion
 EPC:	DC.W 0 ;econtador de programa
 ET0:	DC.W 0 ;eregistro T0
@@ -87,7 +84,8 @@ JMPLIST:
 	; NOTE on the following list of EINSTRUCTIONS implementations
 	;   - RGET and RSET subroutines are used to get or set eregisters
 	;   - EMEM is accessed with indexed mode
-	;       (indexes are multiplied by 2 as each ememory cell contains 2 Bytes)
+	;       (indexes are multiplied by 2 as each ememory cell contains 2
+	;        Bytes)
 	;   - AND instruction is used in instead of BTST as the former allows
 	;       all possible sizes and the latter only allows byte and longword
 	;   - FLAGS subroutine is used to update specific flags
