@@ -1,5 +1,5 @@
 \documentclass[11pt, a4paper]{article}
-\title{{\huge Práctica 2}\\\vspace{1em}Ingeniería Informatica (UIB)\\Estructura de Computadores I (2022-2023)\\Grupo 301}
+\title{{\huge Práctica 2}\\\vspace{1em}Ingeniería Informática (UIB)\\Estructura de Computadores I (2022-2023)\\Grupo 301}
 \author{Serafí Nebot Ginard (41617163C)\\sng656@id.uib.eu}
 \date{}
 \thispagestyle{empty}
@@ -432,7 +432,7 @@ the rest of the instruction. This scenario may be resolved by checking the two M
 the ID.
 
 \subsection{Decode phase implementation}
-Due to the fact that the H9K instructions can be divided into two groups, a one-level Binary Decision
+Due to the fact that the H9K instruction set can be divided into two groups, a one-level Binary Decision
 Tree has been implemented in order to treat each group differently.
 
 The decode algorithm has been implemented in the following manner:
@@ -520,14 +520,14 @@ implementation of $\mathbf{EADD}$'s execution.
 \subsection{Instruction parsing}
 Before an einstruction can be executed, the operands, which are encoded within the einstruction,
 must be retrieved. For this, the einstruction is shifted right the necessary amount so that the operand
-is aligned to the LSb and then masked with an AND operation to obtain the operand value.
+is aligned to the LSb and then masked with an $\mathbf{AND}$ operation to obtain the operand value.
 
 For example, the $\mathbf{k}$ operand of the $\mathbf{ESET}$ instruction can be parsed with the
 following steps\footnote{The \texttt{>>} operator refers to the logic shift right operation and the
 	\texttt{\&} operator refers to the logic AND operation}:
 \begin{enumerate}
 	\item \verb|0b11100kkkkkkkkccc >> 3 = 0b00011100kkkkkkkk|
-	\item \verb|0b00011100kkkkkkkk & 7 = 0b00000000kkkkkkkk|
+	\item \verb|0b00011100kkkkkkkk & 255 = 0b00000000kkkkkkkk|
 \end{enumerate}
 
 \subsection{Instruction implementation}
@@ -543,9 +543,8 @@ The following is a procedure used to describe the generic implementation of eins
 		\item Calculate result, if necessary.
 		\item Store result to eregisters or ememory, if necessary.
 		\item Update eregisters, if necessary.
+		\item Update the corresponding $\mathbf{ESR}$ flags, if necessary.
 	\end{enumerate}
-	\item Update the corresponding $\mathbf{ESR}$ flags.\footnote{Not all einstructions update all
-		eflags and some don't update any.}
 	\item Jump to fetch phase.\footnote{$\mathbf{EXIT}$ is the only
 		exception, as it stops execution.}
 \end{enumerate}
@@ -645,7 +644,7 @@ EXIT
 
 After the execution of the eprogram $\mathbf{ET0}$ should equal \verb|0x0032|, which is 50 in
 decimal, $\mathbf{ET1}$ should equal \verb|0x0000|, which is 0 in decimal and
-$\mathbf{ESR}$ should equal \verb|0x0005| or \verb|0b0000000000000101|. Which means that both $\mathbf{C}$ and
+$\mathbf{ESR}$ should equal \verb|0x0005|, or \verb|0b0000000000000101|, which means that both $\mathbf{C}$ and
 $\mathbf{Z}$ eflags are set to 1.
 
 Listing \ref{code:h9ksubmem} shows the memory view of the emulator after the execution of the
@@ -657,7 +656,7 @@ eprogram with $\mathbf{ET0}$ highlighted in red, $\mathbf{ET1}$ in green and $\m
 @00001020: 00 00 !\sethlcolor{light-blue}\hl{00 05}!
 \end{lstlisting}
 
-\subsection{Custom code: division implementation}
+\subsection{New functionality: division}
 An implementation of the division arithmetic operation has been accomplished using the Euclidean
 Division Algorithm. This has been done in order to test the execution of an algorithm which involves
 multiple einstructions, efalgs updates and conditional jumps. Implementation is displayed on Listing \ref{code:h9kdivimpl}.
@@ -780,8 +779,8 @@ EXIT
 \end{minipage}
 
 The eprogram iterates through two three-element vectors (found at eaddresses \verb|@0016| and
-\verb|@0019|), multiplies each element by 2, adds both vectors together and stores the result in an
-other three-element vector (found at eaddress \verb|@0022|). After the execution of the eprogram
+\verb|@0019|), multiplies each element by 2, adds both vectors together and stores the result in
+another three-element vector (found at eaddress \verb|@0022|). After the execution of the eprogram
 the result vector should equal [\verb|0x0004|, \verb|0x004|, \verb|0x0004|].
 
 Listing \ref{code:h9kT1mem} shows the memory view of the emulator after the execution of the
@@ -799,9 +798,9 @@ eprogram with the result vector highlighted in red.
 \section{Conclusion}
 The development of an emulator requires a lot of attention to detail. It is extremely easy to make
 a mistake. For this reason, I think this assignment is a really great way to take most of the
-knowledge learned throughout the semester, put it all together and test. Moreover, it has provided me
-with a deeper knowledge about how elemental machines work and a better understanding of the Motorola
-68000 assembly and its restrictions.
+knowledge learned throughout the semester, combine it all together and put oneself to the test.
+Personally, it has provided me with a deeper knowledge on how elemental machines work and a better
+understanding of the Motorola 68000 assembly and its capabilities and restrictions.
 
 In the development of any program, it is of great importance to identify patterns as it can greatly
 improve its performance and readability. But, even though the decode algorithm has been implemented
@@ -825,8 +824,8 @@ writing and assembling HAL9000 programs and facilitate the testing process.
 	\underline{\href{https://github.com/serafi-nebot-uib/hal9000-assembler}{serafi-nebot-uib/hal9000-assembler}}\footnote{Full
 	link:
 	\href{https://github.com/serafi-nebot-uib/hal9000-assembler}{https://github.com/serafi-nebot-uib/hal9000-assembler}}.
-	This tool has proved to be extremely useful for the development of this assignment, as it has
-	sped up the test iteration process.
+	This tool has proved to be extremely useful for the development of this emulator, as it has
+	considerably sped up the test iteration process.
 
 	\textbf{Example demonstration} \\
 	With the code on Listing \ref{code:h9kasmdiv}, the HAL9000 Assembler will produce the output on Listing
