@@ -1,5 +1,5 @@
 \documentclass[11pt, a4paper]{article}
-\title{Ingeniería Informatica (UIB)\\Estructura de Computadores I (2022-2023)\\Grupo 301}
+\title{{\huge Práctica 2}\\\vspace{1em}Ingeniería Informatica (UIB)\\Estructura de Computadores I (2022-2023)\\Grupo 301}
 \author{Serafí Nebot Ginard (41617163C)\\sng656@id.uib.eu}
 \date{}
 \thispagestyle{empty}
@@ -18,7 +18,7 @@
 \usepackage[page,toc,titletoc,title]{appendix}
 \usepackage{enumitem}
 \usepackage{caption}
-\usepackage{color}
+\usepackage{xcolor,color,soul}
 
 \definecolor{light-red}{rgb}{1, 0.18, 0.26}
 \definecolor{light-green}{rgb}{0.18, 1, 0.26}
@@ -275,10 +275,7 @@ emulated computer. The following will be said: the result is stored in register 
 	\label{table:acronyms}
 \end{table}
 
-
-\pagebreak
 \section{Reference tables}
-
 \subsection{Subroutines}
 \begin{table}[h!]
 	\centering
@@ -388,10 +385,8 @@ MOVE.W EMEM(A0), EIR	; load current instruction to EIR
 ADDQ.W #1, EPC		; increase EPC by 1 after fetch
 \end{lstlisting}
 
-\pagebreak
 \section{Decode phase}
 \subsection{Decode phase introduction}
-
 When developing an instruction decoder it is very common to use a Binary Decision Tree, a structure
 based on a sequential decision process. This technique is very useful when the instructions'
 opcodes to decode are completely arbitrary, with no common pattern between them and their assigned
@@ -453,7 +448,8 @@ The decode algorithm has been implemented in the following manner:
 		exception}; replace opcode with a hardcoded value).
 	\item Shift right 12 bits to obtain the instruction's opcode.
 \end{enumerate}
-The decode algorithm can be translated into the following M68K subroutine assembly code:
+The decode algorithm can be translated into the M68K subroutine assembly code displayed on Listing
+\ref{code:h9kdecoder}.
 \begin{lstlisting}[style=customasm, caption={HAL9000 instruction decoder subroutine}, label={code:h9kdecoder}]
 DECOD:
 	MOVE.L D0, -(SP)		; save current value of D0
@@ -654,10 +650,11 @@ $\mathbf{Z}$ eflags are set to 1.
 
 Listing \ref{code:h9ksubmem} shows the memory view of the emulator after the execution of the
 eprogram with $\mathbf{ET0}$ highlighted in red, $\mathbf{ET1}$ in green and $\mathbf{ESR}$ in blue.
-\begin{lstlisting}[style=customasm, caption={HAL9000 ESUB test code memory view}, label={code:h9ksubmem}, escapechar=!]
+\begin{lstlisting}[style=customasm, caption={HAL9000 ESUB test code memory view},
+	label={code:h9ksubmem}, escapechar=!, columns=fullflexible]
 @00001000: E4 E2 E6 73 E0 04 E0 05 D2 30 D4 51 80 00 80 00
-@00001010: 00 07 !\colorbox{light-red}{00 32}! !\colorbox{light-green}{00 00}! FF 9C FF CE 00 00 00 00 00 00
-@00001020: 00 00 !\colorbox{light-blue}{00 05}!
+@00001010: 00 07 !\sethlcolor{light-red}\hl{00 32}! !\sethlcolor{light-green}\hl{00 00}! FF 9C FF CE 00 00 00 00 00 00
+@00001020: 00 00 !\sethlcolor{light-blue}\hl{00 05}!
 \end{lstlisting}
 
 \subsection{Custom code: division implementation}
@@ -709,10 +706,11 @@ After the execution of the eprogram, $\mathbf{EX2}$ holds the residue of the div
 be 4, and $\mathbf{EX3}$ holds the quotient of the division, which should be 17. Listing
 \ref{code:h9kdivmem} displays the memory view of the emulator after the execution of the eprogram
 with $\mathbf{EX2}$ highlighted in red and $\mathbf{EX3}$ highlighted in green.
-\begin{lstlisting}[style=customasm, caption={HAL9000 division code memory view}, label={code:h9kdivmem}, escapechar=!]
+\begin{lstlisting}[style=customasm, caption={HAL9000 division code memory view},
+	label={code:h9kdivmem}, escapechar=!, columns=fullflexible]
 00001000: 00 18 00 1B C0 02 E0 03 D2 14 50 10 60 10 40 16
 00001010: D1 22 E8 0B 40 08 80 00 00 7B 00 07 80 00 00 0C
-00001020: 00 7B 00 07 !\colorbox{light-red}{00 04}! !\colorbox{light-green}{00 11}! 00 03 00 00 00 00 00 00
+00001020: 00 7B 00 07 !\sethlcolor{light-red}\hl{00 04}! !\sethlcolor{light-green}\hl{00 11}! 00 03 00 00 00 00 00 00
 00001030: 00 04 42
 \end{lstlisting}
 
@@ -788,11 +786,12 @@ the result vector should equal [\verb|0x0004|, \verb|0x004|, \verb|0x0004|].
 
 Listing \ref{code:h9kT1mem} shows the memory view of the emulator after the execution of the
 eprogram with the result vector highlighted in red.
-\begin{lstlisting}[style=customasm, caption={HAL9000 assignment code memory view}, label={code:h9kT1mem}, escapechar=!]
+\begin{lstlisting}[style=customasm, caption={HAL9000 assignment code memory view},
+	label={code:h9kT1mem}, escapechar=!, columns=fullflexible]
 @00001000: E0 82 E0 9B E0 B4 E0 1D 20 20 C0 06 20 31 C0 17
 @00001010: F1 60 F1 70 CE 70 30 40 EF FD 50 1E 40 08 80 00
-@00001020: 00 01 00 01 00 01 00 01 00 01 00 01 !\colorbox{light-red}{00 04 00 04}!
-@00001030: !\colorbox{light-red}{00 04}!
+@00001020: 00 01 00 01 00 01 00 01 00 01 00 01 !\sethlcolor{light-red}\hl{00 04 00 04}!
+@00001030: !\sethlcolor{light-red}\hl{00 04}!
 \end{lstlisting}
 
 \vfill
